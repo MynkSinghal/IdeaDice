@@ -336,6 +336,12 @@ struct ContentView: View {
     // Add this property to track if editor has focus
     @State private var isEditorFocused: Bool = false
     
+    // Add sound player instance
+    @ObservedObject private var soundPlayer = AmbientSoundPlayer.shared
+    
+    // State for popover
+    @State private var showingSoundPicker: Bool = false
+    
     var body: some View {
         ZStack {
             // Background
@@ -404,6 +410,9 @@ struct ContentView: View {
                 timer.invalidate()
                 writingTimer = nil
             }
+            
+            // Stop any playing sounds
+            soundPlayer.stopCurrentSound()
         }
     }
     
@@ -513,24 +522,92 @@ struct ContentView: View {
                     
                     Spacer()
                     
-                    // Center - Font selector
-                    Button {
-                        settings.cycleToNextFont()
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "textformat")
-                                .font(.system(size: 10))
-                            Text(settings.selectedFont.rawValue)
-                                .font(.system(size: 12, weight: .regular, design: .monospaced))
+                    // Center - Tools row
+                    HStack(spacing: 15) {
+                        // Font selector
+                        Button {
+                            settings.cycleToNextFont()
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "textformat")
+                                    .font(.system(size: 10))
+                                Text(settings.selectedFont.rawValue)
+                                    .font(.system(size: 12, weight: .regular, design: .monospaced))
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Color.black.opacity(0.06))
+                            .foregroundColor(.black.opacity(0.7))
+                            .cornerRadius(12)
                         }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(Color.black.opacity(0.06))
-                        .foregroundColor(.black.opacity(0.7))
-                        .cornerRadius(12)
+                        .buttonStyle(.plain)
+                        .help("Change text font")
+                        
+                        // Ambient sound / focus mode selector
+                        Button {
+                            showingSoundPicker.toggle()
+                        } label: {
+                            HStack(spacing: 4) {
+                                // Dynamic icon based on selected sound
+                                Image(systemName: soundPlayer.currentSound == .none ? "speaker.wave.2" : soundPlayer.currentSound.iconName)
+                                    .font(.system(size: 10))
+                                
+                                // Text changes based on if sound is playing
+                                Text(soundPlayer.currentSound == .none ? "Focus Mode" : soundPlayer.currentSound.rawValue)
+                                    .font(.system(size: 12, weight: .regular, design: .monospaced))
+                                
+                                // Play/pause indicator
+                                if soundPlayer.currentSound != .none {
+                                    Image(systemName: soundPlayer.isPlaying ? "pause.fill" : "play.fill")
+                                        .font(.system(size: 8))
+                                        .foregroundColor(.black.opacity(0.5))
+                                }
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(
+                                soundPlayer.currentSound != .none 
+                                ? Color.blue.opacity(0.15) 
+                                : Color.black.opacity(0.06)
+                            )
+                            .foregroundColor(soundPlayer.currentSound != .none ? .blue.opacity(0.8) : .black.opacity(0.7))
+                            .cornerRadius(12)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Ambient sounds for focus")
+                        .popover(isPresented: $showingSoundPicker, arrowEdge: .bottom) {
+                            AmbientSoundPicker(isPresented: $showingSoundPicker)
+                        }
+                        .contextMenu {
+                            // Quick menu to toggle current sound
+                            if soundPlayer.currentSound != .none {
+                                Button {
+                                    soundPlayer.toggleSound()
+                                } label: {
+                                    Label(soundPlayer.isPlaying ? "Pause" : "Play", systemImage: soundPlayer.isPlaying ? "pause" : "play")
+                                }
+                                
+                                Divider()
+                            }
+                            
+                            // Menu to pick sounds quickly
+                            ForEach(AmbientSound.allCases) { sound in
+                                Button {
+                                    soundPlayer.currentSound = sound
+                                } label: {
+                                    Label(sound.rawValue, systemImage: sound.iconName)
+                                }
+                            }
+                        }
+                        .onTapGesture {
+                            // Quick toggle play/pause on main button tap
+                            if soundPlayer.currentSound != .none {
+                                soundPlayer.toggleSound()
+                            } else {
+                                showingSoundPicker.toggle()
+                            }
+                        }
                     }
-                    .buttonStyle(.plain)
-                    .help("Change text font")
                     
                     Spacer()
                     
