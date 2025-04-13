@@ -2,7 +2,7 @@
 
 A beautiful, minimalist macOS app designed to spark creativity and overcome writer's block by combining randomly generated words with a distraction-free writing environment.
 
-![IdeaDice App](https://your-screenshot-link-here.png)
+
 
 ## ✨ Features
 
