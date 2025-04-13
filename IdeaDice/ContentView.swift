@@ -248,48 +248,47 @@ class KeyMonitorController {
             return
         }
         
-        // Use a safer implementation with try-catch for error handling
-        do {
-            // Mark as active before attempting to create the monitor
-            isMonitoringActive = true
+        // Mark as active before attempting to create the monitor
+        isMonitoringActive = true
+        
+        // Create new monitor for key events without capture specifiers
+        keyDownMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            // Log key events for debugging
+            print("Key event received: \(event.keyCode), focused: \(isTextFieldFocused())")
             
-            // Create new monitor for key events without capture specifiers
-            if let newMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-                // Check if locked mode is on - block all keypresses
-                if isLocked() {
-                    // Cancel all key events when locked
+            // Check if locked mode is on - block all keypresses
+            if isLocked() {
+                // Cancel all key events when locked
+                return nil
+            }
+            
+            // Only intercept backspace/delete if no-backspace mode is on and we're focused
+            let deleteKey: UInt16 = 51 // Backspace/delete key code
+            
+            if event.keyCode == deleteKey && isNoBackspaceMode() {
+                print("Backspace key detected with no-backspace mode on")
+                
+                // Only block if we're focused on the text editor
+                if isTextFieldFocused() {
+                    print("Blocking backspace - editor has focus")
+                    // Show visual feedback that backspace was attempted
+                    onBackspaceAttempted()
+                    
+                    // Prevent the backspace by consuming the event
                     return nil
                 }
-                
-                // Only intercept backspace if no-backspace mode is on and we're focused
-                if isNoBackspaceMode() && isTextFieldFocused() {
-                    let deleteKey: UInt16 = 51 // Backspace/delete key code
-                    
-                    // Check if backspace/delete key is pressed
-                    if event.keyCode == deleteKey {
-                        // Show visual feedback that backspace was attempted
-                        onBackspaceAttempted()
-                        
-                        // Prevent the backspace by consuming the event
-                        return nil
-                    }
-                }
-                
-                // Let all other events through
-                return event
-            } {
-                // Successfully created the monitor
-                keyDownMonitor = newMonitor
-                print("Key monitor initialized successfully")
-            } else {
-                // Failed to create the monitor
-                isMonitoringActive = false
-                print("Failed to create key event monitor")
             }
-        } catch {
-            // Something went wrong
+            
+            // Let all other events through
+            return event
+        }
+        
+        if keyDownMonitor != nil {
+            print("Key monitor initialized successfully")
+        } else {
+            // Failed to create the monitor
             isMonitoringActive = false
-            print("Error setting up key monitor: \(error)")
+            print("Failed to create key event monitor")
         }
     }
     
@@ -298,6 +297,7 @@ class KeyMonitorController {
         if let monitor = keyDownMonitor {
             NSEvent.removeMonitor(monitor)
             keyDownMonitor = nil
+            print("Key monitor stopped and cleaned up")
         }
         isMonitoringActive = false
     }
@@ -332,6 +332,9 @@ struct ContentView: View {
     @State private var nounCard: WordCardView?
     @State private var verbCard: WordCardView?
     @State private var emotionCard: WordCardView?
+    
+    // Add this property to track if editor has focus
+    @State private var isEditorFocused: Bool = false
     
     var body: some View {
         ZStack {
@@ -475,6 +478,7 @@ struct ContentView: View {
                     opacity: $opacity,
                     selectedText: $selectedText,
                     showFormatToolbar: $showFormatToolbar,
+                    isEditorFocused: $isEditorFocused,  // Pass the binding to track focus
                     onFormatBold: { formatSelectedText(style: .bold) },
                     onFormatItalic: { formatSelectedText(style: .italic) },
                     onFormatUnderline: { formatSelectedText(style: .underline) },
@@ -757,7 +761,7 @@ struct ContentView: View {
         KeyMonitorController.shared.startMonitoring(
             isLocked: { self.isLocked },
             isNoBackspaceMode: { self.noBackspaceMode },
-            isTextFieldFocused: { self.isTextFieldFocused },
+            isTextFieldFocused: { self.isEditorFocused },  // Use our new focus state
             onBackspaceAttempted: { self.showBackspaceAttemptFeedback() }
         )
     }
@@ -765,11 +769,27 @@ struct ContentView: View {
     // Show visual feedback when backspace is attempted in no-backspace mode
     func showBackspaceAttemptFeedback() {
         // Set flag to show visual feedback
-        self.backspaceAttempted = true
-        
-        // Reset after a short delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            self.backspaceAttempted = false
+        DispatchQueue.main.async {
+            // Play a system alert sound to provide audio feedback
+            NSSound.beep()
+            
+            // Show visual feedback
+            self.backspaceAttempted = true
+            
+            // Double pulse effect
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                self.backspaceAttempted = false
+                
+                // Second pulse after a short delay
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    self.backspaceAttempted = true
+                    
+                    // End the effect
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        self.backspaceAttempted = false
+                    }
+                }
+            }
         }
     }
     

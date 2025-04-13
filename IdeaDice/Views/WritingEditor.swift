@@ -9,6 +9,7 @@ struct WritingEditor: View {
     @Binding var opacity: Double
     @Binding var selectedText: String
     @Binding var showFormatToolbar: Bool
+    @Binding var isEditorFocused: Bool
     @FocusState private var isTextFieldFocused: Bool
     
     // Callbacks
@@ -67,6 +68,10 @@ struct WritingEditor: View {
                         }
                     }
                 }
+                // Sync the FocusState with the binding
+                .onChange(of: isTextFieldFocused) { _, newFocusValue in
+                    isEditorFocused = newFocusValue
+                }
                 .overlay(
                     Group {
                         if noteText.isEmpty && !isTextFieldFocused {
@@ -121,6 +126,7 @@ struct WritingEditor: View {
             // Focus the text editor when the view appears
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 isTextFieldFocused = true
+                isEditorFocused = true
             }
         }
     }
@@ -133,6 +139,7 @@ struct WritingEditor: View {
         opacity: .constant(1.0),
         selectedText: .constant(""),
         showFormatToolbar: .constant(false),
+        isEditorFocused: .constant(false),
         onFormatBold: {},
         onFormatItalic: {},
         onFormatUnderline: {},
