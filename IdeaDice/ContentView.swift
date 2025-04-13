@@ -210,6 +210,18 @@ class HistoryManager: ObservableObject {
     }
     
     func deleteEntry(at indexSet: IndexSet) {
+        // If we're deleting the current entry, clear references
+        for index in indexSet {
+            let entryId = entries[index].id
+            if currentlyEditingEntry?.id == entryId {
+                currentlyEditingEntry = nil
+            }
+            if currentlyViewingLockedEntryId == entryId {
+                currentlyViewingLockedEntryId = nil
+            }
+        }
+        
+        // Remove the entries
         entries.remove(atOffsets: indexSet)
         saveEntries()
     }
@@ -524,9 +536,12 @@ struct ContentView: View {
                             if !isLocked {
                                 historyManager.autoSave(newValue)
                                 
-                                // Start the writing timer if it's not already running
-                                if writingStartTime == nil && !newValue.isEmpty {
-                                    startWritingTimer()
+                                // Use dispatchQueue to avoid modifying state during view update
+                                DispatchQueue.main.async {
+                                    // Start the writing timer if it's not already running
+                                    if writingStartTime == nil && !newValue.isEmpty {
+                                        startWritingTimer()
+                                    }
                                 }
                             } else {
                                 // If locked, revert any changes by restoring content from history
@@ -848,6 +863,14 @@ struct ContentView: View {
                                 // Delete button in top right
                                 Button {
                                     if let index = historyManager.entries.firstIndex(where: { $0.id == entry.id }) {
+                                        // If this is the currently viewed entry, clear it
+                                        if historyManager.currentlyEditingEntry?.id == entry.id ||
+                                           historyManager.currentlyViewingLockedEntryId == entry.id {
+                                            historyManager.currentlyEditingEntry = nil
+                                            historyManager.currentlyViewingLockedEntryId = nil
+                                        }
+                                        
+                                        // Then delete the entry
                                         historyManager.deleteEntry(at: IndexSet(integer: index))
                                     }
                                 } label: {
@@ -873,6 +896,14 @@ struct ContentView: View {
                             
                             Button {
                                 if let index = historyManager.entries.firstIndex(where: { $0.id == entry.id }) {
+                                    // If this is the currently viewed entry, clear it
+                                    if historyManager.currentlyEditingEntry?.id == entry.id ||
+                                       historyManager.currentlyViewingLockedEntryId == entry.id {
+                                        historyManager.currentlyEditingEntry = nil
+                                        historyManager.currentlyViewingLockedEntryId = nil
+                                    }
+                                    
+                                    // Then delete the entry
                                     historyManager.deleteEntry(at: IndexSet(integer: index))
                                 }
                             } label: {
@@ -1002,9 +1033,7 @@ struct ContentView: View {
         }
         
         // Create new monitor
-        keyDownMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            guard let self = self else { return event }
-            
+        keyDownMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             // Only intercept if no-backspace mode is on, we're focused, and not locked
             if self.noBackspaceMode && self.isTextFieldFocused && !self.isLocked {
                 let deleteKey: UInt16 = 51 // Backspace/delete key code
