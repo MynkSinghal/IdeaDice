@@ -236,6 +236,8 @@ struct ContentView: View {
     @State private var writingStartTime: Date?
     @State private var elapsedWritingTime: TimeInterval = 0
     @State private var writingTimer: Timer?
+    @State private var noBackspaceMode: Bool = false
+    @State private var keyDownMonitor: Any?
     
     // References to card views for animation
     @State private var nounCard: WordCardView?
@@ -349,11 +351,18 @@ struct ContentView: View {
             
             // Setup selection change notification observer
             setupSelectionObserver()
+            
+            // Setup key monitor for backspace prevention
+            setupKeyMonitor()
         }
         .onDisappear {
             // Clean up observers and timers
             if let observer = selectionObserver {
                 NotificationCenter.default.removeObserver(observer)
+            }
+            
+            if let keyMonitor = keyDownMonitor {
+                NSEvent.removeMonitor(keyMonitor)
             }
             
             writingTimer?.invalidate()
@@ -398,6 +407,20 @@ struct ContentView: View {
         
         // Toggle lock status in history manager
         isLocked = historyManager.toggleLockStatus()
+        
+        // Stop timer if content is locked
+        if isLocked {
+            stopWritingTimer()
+        } else {
+            // Restart timer if unlocked
+            startWritingTimer()
+        }
+    }
+    
+    // Stop the writing timer without resetting
+    func stopWritingTimer() {
+        writingTimer?.invalidate()
+        writingTimer = nil
     }
     
     var mainContent: some View {
@@ -593,7 +616,27 @@ struct ContentView: View {
                     Spacer()
                     
                     // Right side actions
-                    HStack(spacing: 16) {
+                    HStack(spacing: 12) {
+                        // No backspace mode toggle
+                        Button {
+                            noBackspaceMode.toggle()
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: noBackspaceMode ? "delete.left.fill" : "delete.left")
+                                    .font(.system(size: 10))
+                                    .symbolVariant(noBackspaceMode ? .slash : .none)
+                                Text("Backspace")
+                                    .font(.system(size: 12, weight: .regular, design: .monospaced))
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(noBackspaceMode ? Color.black.opacity(0.12) : Color.black.opacity(0.06))
+                            .foregroundColor(.black.opacity(0.7))
+                            .cornerRadius(12)
+                        }
+                        .buttonStyle(.plain)
+                        .help(noBackspaceMode ? "Enable backspace" : "Disable backspace for flow writing")
+                        
                         Button {
                             toggleLockStatus()
                         } label: {
@@ -949,6 +992,33 @@ struct ContentView: View {
         writingTimer = nil
         writingStartTime = nil
         elapsedWritingTime = 0
+    }
+    
+    // Setup key monitor to prevent backspace
+    func setupKeyMonitor() {
+        // Remove existing monitor if any
+        if let monitor = keyDownMonitor {
+            NSEvent.removeMonitor(monitor)
+        }
+        
+        // Create new monitor
+        keyDownMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self = self else { return event }
+            
+            // Only intercept if no-backspace mode is on, we're focused, and not locked
+            if self.noBackspaceMode && self.isTextFieldFocused && !self.isLocked {
+                let deleteKey: UInt16 = 51 // Backspace/delete key code
+                
+                // Check if backspace/delete key is pressed
+                if event.keyCode == deleteKey {
+                    // Prevent the backspace by consuming the event
+                    return nil
+                }
+            }
+            
+            // Let all other events through
+            return event
+        }
     }
 }
 
