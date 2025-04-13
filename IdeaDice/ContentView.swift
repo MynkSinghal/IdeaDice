@@ -30,6 +30,7 @@ class HistoryManager: ObservableObject {
     
     @Published var entries: [WritingEntry] = []
     private let entriesKey = "writingEntries"
+    private var saveTimer: Timer?
     
     init() {
         loadEntries()
@@ -41,6 +42,20 @@ class HistoryManager: ObservableObject {
         let entry = WritingEntry.createFromText(text)
         entries.insert(entry, at: 0)
         saveEntries()
+    }
+    
+    // Auto-save with debounce
+    func autoSave(_ text: String) {
+        // Cancel existing timer
+        saveTimer?.invalidate()
+        
+        // Only proceed if text isn't empty
+        guard !text.isEmpty else { return }
+        
+        // Set new timer for 2 seconds after typing stops
+        saveTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
+            self?.saveEntry(text)
+        }
     }
     
     func loadEntries() {
@@ -316,6 +331,10 @@ struct ContentView: View {
                         .foregroundColor(.black)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .padding(30)
+                        .scrollIndicators(.hidden)
+                        .onChange(of: noteText) { _, newValue in
+                            historyManager.autoSave(newValue)
+                        }
                         .overlay(
                             Group {
                                 if noteText.isEmpty && !isTextFieldFocused {
@@ -461,7 +480,7 @@ struct ContentView: View {
                 } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 12))
-                        .foregroundColor(.gray)
+                        .foregroundColor(.black)
                 }
                 .buttonStyle(.plain)
             }
@@ -474,18 +493,19 @@ struct ContentView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(entry.title)
                             .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.black)
                             .lineLimit(1)
                         
                         HStack {
                             Text(formatDate(entry.date))
                                 .font(.system(size: 12))
-                                .foregroundColor(.gray)
+                                .foregroundColor(.black.opacity(0.7))
                             
                             Spacer()
                             
                             Text("\(entry.wordCount) words")
                                 .font(.system(size: 12))
-                                .foregroundColor(.gray)
+                                .foregroundColor(.black.opacity(0.7))
                         }
                     }
                     .contentShape(Rectangle())
@@ -499,16 +519,12 @@ struct ContentView: View {
                     historyManager.deleteEntry(at: indexSet)
                 }
             }
+            .scrollIndicators(.hidden)
             
             // Bottom buttons
             VStack(spacing: 8) {
                 // New Chat button
                 Button {
-                    // Save current entry if not empty
-                    if !noteText.isEmpty {
-                        historyManager.saveEntry(noteText)
-                    }
-                    
                     // Clear text and roll new words
                     noteText = ""
                     rollDice()
@@ -516,8 +532,10 @@ struct ContentView: View {
                     HStack {
                         Image(systemName: "plus.bubble")
                             .font(.system(size: 14))
-                        Text("New Chat")
+                            .foregroundColor(.black)
+                        Text("New Writing")
                             .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.black)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 8)
@@ -526,19 +544,6 @@ struct ContentView: View {
                 }
                 .buttonStyle(.plain)
                 .padding(.horizontal)
-                
-                // Save button
-                Button {
-                    historyManager.saveEntry(noteText)
-                } label: {
-                    Text("Save Current Entry")
-                        .font(.system(size: 14, weight: .medium))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
-                }
-                .buttonStyle(.plain)
-                .background(Color(white: 0.95))
-                .disabled(noteText.isEmpty)
             }
             .padding(.bottom, 8)
         }
@@ -560,11 +565,15 @@ struct ContentView: View {
         } label: {
             Image(systemName: "sidebar.left")
                 .font(.system(size: 16))
-                .foregroundColor(.secondary)
-                .padding(8)
+                .foregroundColor(.black)
+                .padding(10)
                 .background(Color.white)
-                .clipShape(Circle())
-                .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
+                )
+                .shadow(color: Color.black.opacity(0.15), radius: 3, x: 0, y: 2)
         }
         .buttonStyle(.plain)
         .help("Show History")
