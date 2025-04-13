@@ -229,174 +229,184 @@ struct ContentView: View {
     }
     
     var mainContent: some View {
-        VStack(spacing: 0) {
-            // Word Cards in a discreet horizontal row
-            HStack(spacing: 16) {
-                Spacer()
-                
-                // Word cards side by side at the top
-                WordCardView(word: noun, label: "NOUN", color: .primary)
-                    .frame(width: 120)
-                    .overlay(GeometryReader { geometry in
-                        Color.clear.onAppear {
-                            nounCard = WordCardView(word: noun, label: "NOUN", color: .primary)
-                        }
-                    })
-                
-                WordCardView(word: verb, label: "VERB", color: .primary)
-                    .frame(width: 120)
-                    .overlay(GeometryReader { geometry in
-                        Color.clear.onAppear {
-                            verbCard = WordCardView(word: verb, label: "VERB", color: .primary)
-                        }
-                    })
-                
-                WordCardView(word: emotion, label: "EMOTION", color: .primary)
-                    .frame(width: 120)
-                    .overlay(GeometryReader { geometry in
-                        Color.clear.onAppear {
-                            emotionCard = WordCardView(word: emotion, label: "EMOTION", color: .primary)
-                        }
-                    })
-                
-                Button {
-                    rollDice()
-                } label: {
-                    Image(systemName: "arrow.triangle.2.circlepath")
-                        .font(.system(size: 14, weight: .light))
-                        .foregroundColor(.secondary)
-                        .opacity(0.6)
-                }
-                .buttonStyle(.plain)
-                .help("Roll new words")
-                .padding(.leading, 8)
-                
-                Spacer()
-                
-                // History toggle button
-                Button {
-                    withAnimation(.spring()) {
-                        showSidebar.toggle()
-                    }
-                } label: {
-                    Image(systemName: showSidebar ? "sidebar.right" : "sidebar.left")
-                        .font(.system(size: 14, weight: .light))
-                        .foregroundColor(.secondary)
-                        .opacity(0.4)
-                }
-                .buttonStyle(.plain)
-                .help("Toggle History")
-                .padding(.trailing, 8)
-                
-                Button {
-                    showSettings = true
-                } label: {
-                    Image(systemName: "gearshape")
-                        .font(.system(size: 14, weight: .light))
-                        .foregroundColor(.secondary)
-                        .opacity(0.4)
-                }
-                .buttonStyle(.plain)
-                .padding(.trailing, 16)
-                .help("Settings")
-            }
-            .padding(.vertical, 16)
-            .opacity(opacity)
-            .animation(.easeInOut(duration: 0.4), value: opacity)
-            
-            // Enhanced Writing Area
-            ZStack(alignment: .top) {
-                TextEditor(text: $noteText)
-                    .font(.system(size: 18, weight: .regular, design: .serif))
-                    .lineSpacing(6)
-                    .focused($isTextFieldFocused)
-                    .scrollContentBackground(.hidden)
-                    .background(Color.white)
-                    .foregroundColor(.black)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding(30)
-                    .overlay(
-                        Group {
-                            if noteText.isEmpty && !isTextFieldFocused {
-                                Text("Begin typing based on the words above...")
-                                    .font(.system(size: 18, weight: .regular, design: .serif))
-                                    .foregroundColor(.secondary.opacity(0.6))
-                                    .padding(.top, 30)
-                                    .padding(.leading, 30)
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                                    .allowsHitTesting(false)
-                            }
-                        }
-                    )
-                    .onTapGesture {
-                        withAnimation(.easeInOut(duration: 0.4)) {
-                            opacity = opacity == 1.0 ? 0.0 : 1.0
-                        }
-                    }
-                
-                // Formatting toolbar overlay when text is selected
-                if showFormatToolbar && !selectedText.isEmpty {
-                    GeometryReader { geometry in
-                        FormatToolbar(onBold: { formatSelectedText(style: .bold) },
-                                   onItalic: { formatSelectedText(style: .italic) },
-                                   onUnderline: { formatSelectedText(style: .underline) })
-                            .opacity(0.95)
-                            .position(x: geometry.size.width / 2, y: 50)
-                            .transition(.opacity)
-                            .animation(.easeInOut(duration: 0.2), value: showFormatToolbar)
-                    }
-                }
-            }
-            
-            // Word count in footer
-            HStack {
-                Text("\(wordCount) words")
-                    .font(.system(size: 12, weight: .regular, design: .monospaced))
-                    .foregroundColor(.secondary)
-                    .opacity(0.5)
-                
-                Spacer()
-                
+        ZStack(alignment: .topTrailing) {
+            VStack(spacing: 0) {
+                // Word Cards in a discreet horizontal row
                 HStack(spacing: 16) {
-                    Button {
-                        noteText = ""
-                    } label: {
-                        Text("Clear")
-                            .font(.system(size: 12, weight: .regular, design: .monospaced))
-                            .foregroundColor(.secondary)
-                            .opacity(0.5)
-                    }
-                    .buttonStyle(.plain)
+                    Spacer()
+                    
+                    // Word cards side by side at the top
+                    WordCardView(word: noun, label: "NOUN", color: .primary)
+                        .frame(width: 120)
+                        .overlay(GeometryReader { geometry in
+                            Color.clear.onAppear {
+                                nounCard = WordCardView(word: noun, label: "NOUN", color: .primary)
+                            }
+                        })
+                    
+                    WordCardView(word: verb, label: "VERB", color: .primary)
+                        .frame(width: 120)
+                        .overlay(GeometryReader { geometry in
+                            Color.clear.onAppear {
+                                verbCard = WordCardView(word: verb, label: "VERB", color: .primary)
+                            }
+                        })
+                    
+                    WordCardView(word: emotion, label: "EMOTION", color: .primary)
+                        .frame(width: 120)
+                        .overlay(GeometryReader { geometry in
+                            Color.clear.onAppear {
+                                emotionCard = WordCardView(word: emotion, label: "EMOTION", color: .primary)
+                            }
+                        })
                     
                     Button {
-                        // Save current entry before rolling new words
-                        if !noteText.isEmpty {
-                            historyManager.saveEntry(noteText)
-                        }
-                        
                         rollDice()
-                        noteText = ""
                     } label: {
-                        Text("Save & New")
-                            .font(.system(size: 12, weight: .regular, design: .monospaced))
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                            .font(.system(size: 14, weight: .light))
                             .foregroundColor(.secondary)
-                            .opacity(0.5)
+                            .opacity(0.6)
                     }
                     .buttonStyle(.plain)
+                    .help("Roll new words")
+                    .padding(.leading, 8)
+                    
+                    Spacer()
+                    
+                    // History toggle button
+                    Button {
+                        withAnimation(.spring()) {
+                            showSidebar.toggle()
+                        }
+                    } label: {
+                        Image(systemName: showSidebar ? "sidebar.right" : "sidebar.left")
+                            .font(.system(size: 14, weight: .light))
+                            .foregroundColor(.secondary)
+                            .opacity(0.4)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Toggle History")
+                    .padding(.trailing, 8)
+                    
+                    Button {
+                        showSettings = true
+                    } label: {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 14, weight: .light))
+                            .foregroundColor(.secondary)
+                            .opacity(0.4)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.trailing, 16)
+                    .help("Settings")
+                }
+                .padding(.vertical, 16)
+                .opacity(opacity)
+                .animation(.easeInOut(duration: 0.4), value: opacity)
+                
+                // Enhanced Writing Area
+                ZStack(alignment: .top) {
+                    TextEditor(text: $noteText)
+                        .font(.system(size: 18, weight: .regular, design: .serif))
+                        .lineSpacing(6)
+                        .focused($isTextFieldFocused)
+                        .scrollContentBackground(.hidden)
+                        .background(Color.white)
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .padding(30)
+                        .overlay(
+                            Group {
+                                if noteText.isEmpty && !isTextFieldFocused {
+                                    Text("Begin typing based on the words above...")
+                                        .font(.system(size: 18, weight: .regular, design: .serif))
+                                        .foregroundColor(.secondary.opacity(0.6))
+                                        .padding(.top, 30)
+                                        .padding(.leading, 30)
+                                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                                        .allowsHitTesting(false)
+                                }
+                            }
+                        )
+                        .onTapGesture {
+                            withAnimation(.easeInOut(duration: 0.4)) {
+                                opacity = opacity == 1.0 ? 0.0 : 1.0
+                            }
+                        }
+                    
+                    // Formatting toolbar overlay when text is selected
+                    if showFormatToolbar && !selectedText.isEmpty {
+                        GeometryReader { geometry in
+                            FormatToolbar(onBold: { formatSelectedText(style: .bold) },
+                                       onItalic: { formatSelectedText(style: .italic) },
+                                       onUnderline: { formatSelectedText(style: .underline) })
+                                .opacity(0.95)
+                                .position(x: geometry.size.width / 2, y: 50)
+                                .transition(.opacity)
+                                .animation(.easeInOut(duration: 0.2), value: showFormatToolbar)
+                        }
+                    }
+                }
+                
+                // Word count in footer
+                HStack {
+                    Text("\(wordCount) words")
+                        .font(.system(size: 12, weight: .regular, design: .monospaced))
+                        .foregroundColor(.secondary)
+                        .opacity(0.5)
+                    
+                    Spacer()
+                    
+                    HStack(spacing: 16) {
+                        Button {
+                            noteText = ""
+                        } label: {
+                            Text("Clear")
+                                .font(.system(size: 12, weight: .regular, design: .monospaced))
+                                .foregroundColor(.secondary)
+                                .opacity(0.5)
+                        }
+                        .buttonStyle(.plain)
+                        
+                        Button {
+                            // Save current entry before rolling new words
+                            if !noteText.isEmpty {
+                                historyManager.saveEntry(noteText)
+                            }
+                            
+                            rollDice()
+                            noteText = ""
+                        } label: {
+                            Text("Save & New")
+                                .font(.system(size: 12, weight: .regular, design: .monospaced))
+                                .foregroundColor(.secondary)
+                                .opacity(0.5)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 30)
+                .padding(.vertical, 10)
+                .background(Color.white.opacity(0.8))
+                .opacity(opacity)
+                .animation(.easeInOut(duration: 0.4), value: opacity)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .onAppear {
+                // Focus the text editor when the main view appears
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    isTextFieldFocused = true
+                    print("Main content appeared, focusing text field")
                 }
             }
-            .padding(.horizontal, 30)
-            .padding(.vertical, 10)
-            .background(Color.white.opacity(0.8))
-            .opacity(opacity)
-            .animation(.easeInOut(duration: 0.4), value: opacity)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onAppear {
-            // Focus the text editor when the main view appears
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                isTextFieldFocused = true
-                print("Main content appeared, focusing text field")
+            
+            // Show small sidebar toggle button when sidebar is hidden
+            if !showSidebar {
+                sidebarToggleButton
+                    .padding(.top, 70)
+                    .padding(.trailing, 16)
+                    .transition(.scale.combined(with: .opacity))
             }
         }
     }
@@ -490,18 +500,47 @@ struct ContentView: View {
                 }
             }
             
-            // Save button
-            Button {
-                historyManager.saveEntry(noteText)
-            } label: {
-                Text("Save Current Entry")
-                    .font(.system(size: 14, weight: .medium))
+            // Bottom buttons
+            VStack(spacing: 8) {
+                // New Chat button
+                Button {
+                    // Save current entry if not empty
+                    if !noteText.isEmpty {
+                        historyManager.saveEntry(noteText)
+                    }
+                    
+                    // Clear text and roll new words
+                    noteText = ""
+                    rollDice()
+                } label: {
+                    HStack {
+                        Image(systemName: "plus.bubble")
+                            .font(.system(size: 14))
+                        Text("New Chat")
+                            .font(.system(size: 14, weight: .medium))
+                    }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 8)
+                    .background(Color(white: 0.92))
+                    .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal)
+                
+                // Save button
+                Button {
+                    historyManager.saveEntry(noteText)
+                } label: {
+                    Text("Save Current Entry")
+                        .font(.system(size: 14, weight: .medium))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                }
+                .buttonStyle(.plain)
+                .background(Color(white: 0.95))
+                .disabled(noteText.isEmpty)
             }
-            .buttonStyle(.plain)
-            .background(Color(white: 0.95))
-            .disabled(noteText.isEmpty)
+            .padding(.bottom, 8)
         }
         .background(Color.white)
         .overlay(
@@ -510,6 +549,25 @@ struct ContentView: View {
                 .foregroundColor(Color.gray.opacity(0.2)), 
             alignment: .leading
         )
+    }
+    
+    // Small sidebar toggle button that stays visible
+    var sidebarToggleButton: some View {
+        Button {
+            withAnimation(.spring()) {
+                showSidebar.toggle()
+            }
+        } label: {
+            Image(systemName: "sidebar.left")
+                .font(.system(size: 16))
+                .foregroundColor(.secondary)
+                .padding(8)
+                .background(Color.white)
+                .clipShape(Circle())
+                .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+        }
+        .buttonStyle(.plain)
+        .help("Show History")
     }
     
     // Helper function to format dates
