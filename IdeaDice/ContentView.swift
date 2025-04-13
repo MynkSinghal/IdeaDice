@@ -108,11 +108,10 @@ struct ContentView: View {
             
             // Create bold font with same size and other traits
             let fontDescriptor = existingFont.fontDescriptor
-            var symbolicTraits = fontDescriptor.symbolicTraits
-            symbolicTraits.insert(.bold)
+            let traits = fontDescriptor.symbolicTraits.union(.bold)
+            let boldFontDescriptor = fontDescriptor.withSymbolicTraits(traits)
             
-            if let boldFontDescriptor = fontDescriptor.withSymbolicTraits(symbolicTraits),
-               let boldFont = NSFont(descriptor: boldFontDescriptor, size: 0) {
+            if let boldFont = NSFont(descriptor: boldFontDescriptor, size: 0) {
                 attributedString.addAttribute(.font, value: boldFont, range: selectedRange)
             } else {
                 // Fallback to regular bold if we can't combine traits
@@ -125,11 +124,10 @@ struct ContentView: View {
             
             // Create italic font with same size and other traits
             let fontDescriptor = existingFont.fontDescriptor
-            var symbolicTraits = fontDescriptor.symbolicTraits
-            symbolicTraits.insert(.italic)
+            let traits = fontDescriptor.symbolicTraits.union(.italic)
+            let italicFontDescriptor = fontDescriptor.withSymbolicTraits(traits)
             
-            if let italicFontDescriptor = fontDescriptor.withSymbolicTraits(symbolicTraits),
-               let italicFont = NSFont(descriptor: italicFontDescriptor, size: 0) {
+            if let italicFont = NSFont(descriptor: italicFontDescriptor, size: 0) {
                 attributedString.addAttribute(.font, value: italicFont, range: selectedRange)
             }
             
