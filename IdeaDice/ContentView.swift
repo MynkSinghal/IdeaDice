@@ -33,21 +33,29 @@ struct ContentView: View {
         guard let currentEditor = NSApp.keyWindow?.firstResponder as? NSTextView else { return }
         let selectedRange = currentEditor.selectedRange()
         
-        let formattedText: String
+        // Create an NSMutableAttributedString from the current content
+        let attributedString = NSMutableAttributedString(string: currentEditor.string)
         
+        // Apply the appropriate style to the selected range
         switch style {
         case .bold:
-            formattedText = "**\(selectedText)**"
+            attributedString.addAttribute(.font, 
+                                          value: NSFont.boldSystemFont(ofSize: 18), 
+                                          range: selectedRange)
         case .italic:
-            formattedText = "*\(selectedText)*"
+            attributedString.addAttribute(.font, 
+                                          value: NSFont.italicSystemFont(ofSize: 18), 
+                                          range: selectedRange)
         case .underline:
-            formattedText = "_\(selectedText)_"
+            attributedString.addAttribute(.underlineStyle, 
+                                          value: NSUnderlineStyle.single.rawValue, 
+                                          range: selectedRange)
         }
         
-        // Replace the selected text with the formatted text
-        currentEditor.textStorage?.replaceCharacters(in: selectedRange, with: formattedText)
+        // Apply the attributed string to the text view
+        currentEditor.textStorage?.setAttributedString(attributedString)
         
-        // Update the binding
+        // Update the binding - convert to plain string for the binding
         noteText = currentEditor.string
         
         // Reset selection state
@@ -109,12 +117,11 @@ struct ContentView: View {
         
         // Add notification observer for selection changes
         selectionObserver = NotificationCenter.default.addObserver(
-            forName: NSText.didChangeSelectionNotification,
+            forName: NSTextView.didChangeSelectionNotification,
             object: nil,
             queue: .main
-        ) { [weak self] notification in
-            guard let self = self,
-                  let textView = notification.object as? NSTextView else { return }
+        ) { [self] notification in
+            guard let textView = notification.object as? NSTextView else { return }
             
             let selectedRange = textView.selectedRange()
             if selectedRange.length > 0 {
@@ -221,36 +228,15 @@ struct ContentView: View {
                 
                 // Formatting toolbar overlay when text is selected
                 if showFormatToolbar && !selectedText.isEmpty {
-                    HStack(spacing: 16) {
-                        Button(action: { formatSelectedText(style: .bold) }) {
-                            Image(systemName: "bold")
-                                .frame(width: 40, height: 30)
-                                .foregroundColor(.black)
-                        }
-                        .buttonStyle(.plain)
-                        .help("Bold")
-                        
-                        Button(action: { formatSelectedText(style: .underline) }) {
-                            Image(systemName: "underline")
-                                .frame(width: 40, height: 30)
-                                .foregroundColor(.black)
-                        }
-                        .buttonStyle(.plain)
-                        .help("Underline")
-                        
-                        Button(action: { formatSelectedText(style: .italic) }) {
-                            Image(systemName: "italic")
-                                .frame(width: 40, height: 30)
-                                .foregroundColor(.black)
-                        }
-                        .buttonStyle(.plain)
-                        .help("Italic")
+                    GeometryReader { geometry in
+                        FormatToolbar(onBold: { formatSelectedText(style: .bold) },
+                                   onItalic: { formatSelectedText(style: .italic) },
+                                   onUnderline: { formatSelectedText(style: .underline) })
+                            .opacity(0.95)
+                            .position(x: geometry.size.width / 2, y: 50)
+                            .transition(.opacity)
+                            .animation(.easeInOut(duration: 0.2), value: showFormatToolbar)
                     }
-                    .padding(8)
-                    .background(Color(NSColor.windowBackgroundColor))
-                    .cornerRadius(8)
-                    .shadow(radius: 2)
-                    .padding(.top, 10)
                 }
             }
             
@@ -331,6 +317,61 @@ struct ContentView: View {
                 self.isRolling = false
             }
         }
+    }
+}
+
+// Separate formatting toolbar component
+struct FormatToolbar: View {
+    var onBold: () -> Void
+    var onItalic: () -> Void
+    var onUnderline: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            Button(action: onBold) {
+                Image(systemName: "bold")
+                    .frame(width: 24, height: 24)
+                    .foregroundColor(.black)
+            }
+            .buttonStyle(FormatButtonStyle())
+            .help("Bold")
+            
+            Button(action: onUnderline) {
+                Image(systemName: "underline")
+                    .frame(width: 24, height: 24)
+                    .foregroundColor(.black)
+            }
+            .buttonStyle(FormatButtonStyle())
+            .help("Underline")
+            
+            Button(action: onItalic) {
+                Image(systemName: "italic")
+                    .frame(width: 24, height: 24)
+                    .foregroundColor(.black)
+            }
+            .buttonStyle(FormatButtonStyle())
+            .help("Italic")
+        }
+        .padding(8)
+        .background(Color(white: 0.98))
+        .cornerRadius(10)
+        .shadow(color: Color.black.opacity(0.15), radius: 3, x: 0, y: 2)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
+        )
+    }
+}
+
+// Custom button style for format buttons
+struct FormatButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .padding(8)
+            .background(configuration.isPressed ? Color.gray.opacity(0.1) : Color.clear)
+            .cornerRadius(6)
+            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
     }
 }
 
