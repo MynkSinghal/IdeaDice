@@ -43,9 +43,11 @@ struct ContentView: View {
                                           value: NSFont.boldSystemFont(ofSize: 18), 
                                           range: selectedRange)
         case .italic:
-            attributedString.addAttribute(.font, 
-                                          value: NSFont.italicSystemFont(ofSize: 18), 
-                                          range: selectedRange)
+            let fontDescriptor = NSFont.systemFont(ofSize: 18).fontDescriptor
+            let italicFontDescriptor = fontDescriptor.withSymbolicTraits(.italic)
+            if let italicFont = NSFont(descriptor: italicFontDescriptor, size: 0) {
+                attributedString.addAttribute(.font, value: italicFont, range: selectedRange)
+            }
         case .underline:
             attributedString.addAttribute(.underlineStyle, 
                                           value: NSUnderlineStyle.single.rawValue, 
