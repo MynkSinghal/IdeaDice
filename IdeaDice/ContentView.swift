@@ -1,5 +1,67 @@
 import SwiftUI
 import AppKit
+import Foundation
+
+// Model for storing writing entries
+struct WritingEntry: Identifiable, Codable {
+    var id = UUID()
+    var date: Date
+    var title: String
+    var content: String
+    var wordCount: Int
+    
+    static func createFromText(_ text: String) -> WritingEntry {
+        let firstLine = text.split(separator: "\n").first ?? ""
+        let title = String(firstLine.prefix(30))
+        let wordCount = text.split(separator: " ").count
+        
+        return WritingEntry(
+            date: Date(),
+            title: title,
+            content: text,
+            wordCount: wordCount
+        )
+    }
+}
+
+// History manager to persist and retrieve writing entries
+class HistoryManager: ObservableObject {
+    static let shared = HistoryManager()
+    
+    @Published var entries: [WritingEntry] = []
+    private let entriesKey = "writingEntries"
+    
+    init() {
+        loadEntries()
+    }
+    
+    func saveEntry(_ text: String) {
+        guard !text.isEmpty else { return }
+        
+        let entry = WritingEntry.createFromText(text)
+        entries.insert(entry, at: 0)
+        saveEntries()
+    }
+    
+    func loadEntries() {
+        if let data = UserDefaults.standard.data(forKey: entriesKey) {
+            if let decodedEntries = try? JSONDecoder().decode([WritingEntry].self, from: data) {
+                entries = decodedEntries
+            }
+        }
+    }
+    
+    private func saveEntries() {
+        if let encodedData = try? JSONEncoder().encode(entries) {
+            UserDefaults.standard.set(encodedData, forKey: entriesKey)
+        }
+    }
+    
+    func deleteEntry(at indexSet: IndexSet) {
+        entries.remove(atOffsets: indexSet)
+        saveEntries()
+    }
+}
 
 struct ContentView: View {
     @State private var noun = WordData.randomNoun()
@@ -16,6 +78,8 @@ struct ContentView: View {
     @State private var selectedText: String = ""
     @State private var showFormatToolbar: Bool = false
     @State private var selectionObserver: Any?
+    @State private var showSidebar: Bool = false
+    @ObservedObject private var historyManager = HistoryManager.shared
     
     // References to card views for animation
     @State private var nounCard: WordCardView?
@@ -33,25 +97,45 @@ struct ContentView: View {
         guard let currentEditor = NSApp.keyWindow?.firstResponder as? NSTextView else { return }
         let selectedRange = currentEditor.selectedRange()
         
-        // Create an NSMutableAttributedString from the current content
-        let attributedString = NSMutableAttributedString(string: currentEditor.string)
+        // Get existing attributes from the current selection if possible
+        let attributedString = NSMutableAttributedString(attributedString: currentEditor.attributedString())
         
-        // Apply the appropriate style to the selected range
+        // Apply the appropriate style to the selected range, preserving existing attributes
         switch style {
         case .bold:
-            attributedString.addAttribute(.font, 
-                                          value: NSFont.boldSystemFont(ofSize: 18), 
-                                          range: selectedRange)
+            // Get existing font or use system font
+            let existingFont = attributedString.attribute(.font, at: selectedRange.location, effectiveRange: nil) as? NSFont ?? NSFont.systemFont(ofSize: 18)
+            
+            // Create bold font with same size and other traits
+            let fontDescriptor = existingFont.fontDescriptor
+            var symbolicTraits = fontDescriptor.symbolicTraits
+            symbolicTraits.insert(.bold)
+            
+            if let boldFontDescriptor = fontDescriptor.withSymbolicTraits(symbolicTraits),
+               let boldFont = NSFont(descriptor: boldFontDescriptor, size: 0) {
+                attributedString.addAttribute(.font, value: boldFont, range: selectedRange)
+            } else {
+                // Fallback to regular bold if we can't combine traits
+                attributedString.addAttribute(.font, value: NSFont.boldSystemFont(ofSize: 18), range: selectedRange)
+            }
+            
         case .italic:
-            let fontDescriptor = NSFont.systemFont(ofSize: 18).fontDescriptor
-            let italicFontDescriptor = fontDescriptor.withSymbolicTraits(.italic)
-            if let italicFont = NSFont(descriptor: italicFontDescriptor, size: 0) {
+            // Get existing font or use system font
+            let existingFont = attributedString.attribute(.font, at: selectedRange.location, effectiveRange: nil) as? NSFont ?? NSFont.systemFont(ofSize: 18)
+            
+            // Create italic font with same size and other traits
+            let fontDescriptor = existingFont.fontDescriptor
+            var symbolicTraits = fontDescriptor.symbolicTraits
+            symbolicTraits.insert(.italic)
+            
+            if let italicFontDescriptor = fontDescriptor.withSymbolicTraits(symbolicTraits),
+               let italicFont = NSFont(descriptor: italicFontDescriptor, size: 0) {
                 attributedString.addAttribute(.font, value: italicFont, range: selectedRange)
             }
+            
         case .underline:
-            attributedString.addAttribute(.underlineStyle, 
-                                          value: NSUnderlineStyle.single.rawValue, 
-                                          range: selectedRange)
+            // Add underline attribute (can coexist with other attributes)
+            attributedString.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: selectedRange)
         }
         
         // Apply the attributed string to the text view
@@ -60,9 +144,8 @@ struct ContentView: View {
         // Update the binding - convert to plain string for the binding
         noteText = currentEditor.string
         
-        // Reset selection state
-        selectedText = ""
-        showFormatToolbar = false
+        // Keep selection and toolbar visible to allow applying multiple formats
+        currentEditor.setSelectedRange(selectedRange)
     }
     
     enum TextStyle {
@@ -79,8 +162,18 @@ struct ContentView: View {
                 WelcomeView(isShowingWelcome: $isShowingWelcome)
                     .transition(.opacity)
             } else {
-                mainContent
-                    .transition(.opacity)
+                HStack(spacing: 0) {
+                    // Main content area
+                    mainContent
+                        .transition(.opacity)
+                    
+                    // History sidebar
+                    if showSidebar {
+                        historySidebar
+                            .frame(width: 250)
+                            .transition(.move(edge: .trailing))
+                    }
+                }
             }
         }
         .sheet(isPresented: $showSettings) {
@@ -182,6 +275,21 @@ struct ContentView: View {
                 
                 Spacer()
                 
+                // History toggle button
+                Button {
+                    withAnimation(.spring()) {
+                        showSidebar.toggle()
+                    }
+                } label: {
+                    Image(systemName: showSidebar ? "sidebar.right" : "sidebar.left")
+                        .font(.system(size: 14, weight: .light))
+                        .foregroundColor(.secondary)
+                        .opacity(0.4)
+                }
+                .buttonStyle(.plain)
+                .help("Toggle History")
+                .padding(.trailing, 8)
+                
                 Button {
                     showSettings = true
                 } label: {
@@ -263,9 +371,15 @@ struct ContentView: View {
                     .buttonStyle(.plain)
                     
                     Button {
+                        // Save current entry before rolling new words
+                        if !noteText.isEmpty {
+                            historyManager.saveEntry(noteText)
+                        }
+                        
                         rollDice()
+                        noteText = ""
                     } label: {
-                        Text("New Words")
+                        Text("Save & New")
                             .font(.system(size: 12, weight: .regular, design: .monospaced))
                             .foregroundColor(.secondary)
                             .opacity(0.5)
@@ -319,6 +433,93 @@ struct ContentView: View {
                 self.isRolling = false
             }
         }
+    }
+    
+    // History sidebar view
+    var historySidebar: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Text("Writing History")
+                    .font(.headline)
+                    .foregroundColor(.black)
+                
+                Spacer()
+                
+                Button {
+                    withAnimation(.spring()) {
+                        showSidebar = false
+                    }
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 12))
+                        .foregroundColor(.gray)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding()
+            .background(Color(white: 0.97))
+            
+            // List of entries
+            List {
+                ForEach(historyManager.entries) { entry in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(entry.title)
+                            .font(.system(size: 14, weight: .medium))
+                            .lineLimit(1)
+                        
+                        HStack {
+                            Text(formatDate(entry.date))
+                                .font(.system(size: 12))
+                                .foregroundColor(.gray)
+                            
+                            Spacer()
+                            
+                            Text("\(entry.wordCount) words")
+                                .font(.system(size: 12))
+                                .foregroundColor(.gray)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        // Load this entry
+                        noteText = entry.content
+                    }
+                    .padding(.vertical, 4)
+                }
+                .onDelete { indexSet in
+                    historyManager.deleteEntry(at: indexSet)
+                }
+            }
+            
+            // Save button
+            Button {
+                historyManager.saveEntry(noteText)
+            } label: {
+                Text("Save Current Entry")
+                    .font(.system(size: 14, weight: .medium))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+            }
+            .buttonStyle(.plain)
+            .background(Color(white: 0.95))
+            .disabled(noteText.isEmpty)
+        }
+        .background(Color.white)
+        .overlay(
+            Rectangle()
+                .frame(width: 1)
+                .foregroundColor(Color.gray.opacity(0.2)), 
+            alignment: .leading
+        )
+    }
+    
+    // Helper function to format dates
+    func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
     }
 }
 
