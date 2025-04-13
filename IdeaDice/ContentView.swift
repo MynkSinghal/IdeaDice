@@ -468,7 +468,7 @@ struct ContentView: View {
             // Header
             HStack {
                 Text("Writing History")
-                    .font(.headline)
+                    .font(.system(size: 18, weight: .medium, design: .serif))
                     .foregroundColor(.black)
                 
                 Spacer()
@@ -479,79 +479,108 @@ struct ContentView: View {
                     }
                 } label: {
                     Image(systemName: "xmark")
-                        .font(.system(size: 12))
-                        .foregroundColor(.black)
+                        .font(.system(size: 14))
+                        .foregroundColor(.black.opacity(0.7))
                 }
                 .buttonStyle(.plain)
             }
             .padding()
-            .background(Color(white: 0.97))
+            .background(Color.white)
+            .overlay(
+                Rectangle()
+                    .frame(height: 1)
+                    .foregroundColor(Color.black.opacity(0.1)),
+                alignment: .bottom
+            )
             
             // List of entries
-            List {
-                ForEach(historyManager.entries) { entry in
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(entry.title)
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.black)
-                            .lineLimit(1)
-                        
-                        HStack {
-                            Text(formatDate(entry.date))
-                                .font(.system(size: 12))
-                                .foregroundColor(.black.opacity(0.7))
-                            
-                            Spacer()
-                            
-                            Text("\(entry.wordCount) words")
-                                .font(.system(size: 12))
-                                .foregroundColor(.black.opacity(0.7))
+            ScrollView {
+                LazyVStack(spacing: 12) {
+                    ForEach(historyManager.entries) { entry in
+                        Button {
+                            // Load this entry
+                            noteText = entry.content
+                        } label: {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text(entry.title)
+                                    .font(.system(size: 16, weight: .medium, design: .serif))
+                                    .foregroundColor(.black)
+                                    .lineLimit(1)
+                                
+                                HStack {
+                                    Text(formatDate(entry.date))
+                                        .font(.system(size: 12, design: .serif))
+                                        .foregroundColor(.black.opacity(0.6))
+                                    
+                                    Spacer()
+                                    
+                                    Text("\(entry.wordCount) words")
+                                        .font(.system(size: 12, design: .serif))
+                                        .foregroundColor(.black.opacity(0.6))
+                                }
+                            }
+                            .padding(12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color.white)
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.black.opacity(0.08), lineWidth: 1)
+                            )
+                            .shadow(color: Color.black.opacity(0.04), radius: 3, x: 0, y: 1)
+                        }
+                        .buttonStyle(.plain)
+                        .contextMenu {
+                            Button {
+                                if let index = historyManager.entries.firstIndex(where: { $0.id == entry.id }) {
+                                    historyManager.deleteEntry(at: IndexSet(integer: index))
+                                }
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
                         }
                     }
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        // Load this entry
-                        noteText = entry.content
-                    }
-                    .padding(.vertical, 4)
                 }
-                .onDelete { indexSet in
-                    historyManager.deleteEntry(at: indexSet)
-                }
-            }
-            .scrollIndicators(.hidden)
-            
-            // Bottom buttons
-            VStack(spacing: 8) {
-                // New Chat button
-                Button {
-                    // Clear text and roll new words
-                    noteText = ""
-                    rollDice()
-                } label: {
-                    HStack {
-                        Image(systemName: "plus.bubble")
-                            .font(.system(size: 14))
-                            .foregroundColor(.black)
-                        Text("New Writing")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.black)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
-                    .background(Color(white: 0.92))
-                    .cornerRadius(6)
-                }
-                .buttonStyle(.plain)
                 .padding(.horizontal)
+                .padding(.vertical, 12)
             }
-            .padding(.bottom, 8)
+            .background(Color(white: 0.98))
+            
+            // New Writing button
+            Button {
+                // Clear text and roll new words
+                noteText = ""
+                rollDice()
+                // Close sidebar
+                withAnimation(.spring()) {
+                    showSidebar = false
+                }
+            } label: {
+                HStack {
+                    Image(systemName: "square.and.pencil")
+                        .font(.system(size: 14))
+                        .foregroundColor(.black)
+                    Text("New Writing")
+                        .font(.system(size: 14, weight: .medium, design: .serif))
+                        .foregroundColor(.black)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .background(Color.white)
+            .overlay(
+                Rectangle()
+                    .frame(height: 1)
+                    .foregroundColor(Color.black.opacity(0.1)),
+                alignment: .top
+            )
         }
         .background(Color.white)
         .overlay(
             Rectangle()
                 .frame(width: 1)
-                .foregroundColor(Color.gray.opacity(0.2)), 
+                .foregroundColor(Color.black.opacity(0.1)), 
             alignment: .leading
         )
     }
