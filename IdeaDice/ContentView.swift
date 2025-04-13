@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct ContentView: View {
     @State private var noun = WordData.randomNoun()
@@ -12,6 +13,9 @@ struct ContentView: View {
     @ObservedObject private var settings = AppSettings.shared
     @FocusState private var isTextFieldFocused: Bool
     @State private var opacity: Double = 1.0
+    @State private var selectedText: String = ""
+    @State private var showFormatToolbar: Bool = false
+    @State private var selectionObserver: Any?
     
     // References to card views for animation
     @State private var nounCard: WordCardView?
@@ -20,6 +24,40 @@ struct ContentView: View {
     
     // Ivory color - using Color.white with opacity for better compatibility
     private let backgroundColor = Color.white
+    
+    // Text formatting functions
+    func formatSelectedText(style: TextStyle) {
+        guard !selectedText.isEmpty else { return }
+        
+        // Get the selected range from the current first responder
+        guard let currentEditor = NSApp.keyWindow?.firstResponder as? NSTextView else { return }
+        let selectedRange = currentEditor.selectedRange()
+        
+        let formattedText: String
+        
+        switch style {
+        case .bold:
+            formattedText = "**\(selectedText)**"
+        case .italic:
+            formattedText = "*\(selectedText)*"
+        case .underline:
+            formattedText = "_\(selectedText)_"
+        }
+        
+        // Replace the selected text with the formatted text
+        currentEditor.textStorage?.replaceCharacters(in: selectedRange, with: formattedText)
+        
+        // Update the binding
+        noteText = currentEditor.string
+        
+        // Reset selection state
+        selectedText = ""
+        showFormatToolbar = false
+    }
+    
+    enum TextStyle {
+        case bold, italic, underline
+    }
     
     var body: some View {
         ZStack {
@@ -50,6 +88,42 @@ struct ContentView: View {
                 isInitialized = true
                 
                 print("Words initialized: \(noun), \(verb), \(emotion)")
+            }
+            
+            // Setup selection change notification observer
+            setupSelectionObserver()
+        }
+        .onDisappear {
+            // Clean up observers
+            if let observer = selectionObserver {
+                NotificationCenter.default.removeObserver(observer)
+            }
+        }
+    }
+    
+    func setupSelectionObserver() {
+        // Remove existing observer if any
+        if let observer = selectionObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        
+        // Add notification observer for selection changes
+        selectionObserver = NotificationCenter.default.addObserver(
+            forName: NSText.didChangeSelectionNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let self = self,
+                  let textView = notification.object as? NSTextView else { return }
+            
+            let selectedRange = textView.selectedRange()
+            if selectedRange.length > 0 {
+                let selectedText = (textView.string as NSString).substring(with: selectedRange)
+                self.selectedText = selectedText
+                self.showFormatToolbar = true
+            } else {
+                self.selectedText = ""
+                self.showFormatToolbar = false
             }
         }
     }
@@ -116,33 +190,69 @@ struct ContentView: View {
             .animation(.easeInOut(duration: 0.4), value: opacity)
             
             // Enhanced Writing Area
-            TextEditor(text: $noteText)
-                .font(.system(size: 18, weight: .regular, design: .serif))
-                .lineSpacing(6)
-                .focused($isTextFieldFocused)
-                .scrollContentBackground(.hidden)
-                .background(Color.white)
-                .foregroundColor(.black)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(30)
-                .overlay(
-                    Group {
-                        if noteText.isEmpty && !isTextFieldFocused {
-                            Text("Begin typing based on the words above...")
-                                .font(.system(size: 18, weight: .regular, design: .serif))
-                                .foregroundColor(.secondary.opacity(0.6))
-                                .padding(.top, 30)
-                                .padding(.leading, 30)
-                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                                .allowsHitTesting(false)
+            ZStack(alignment: .top) {
+                TextEditor(text: $noteText)
+                    .font(.system(size: 18, weight: .regular, design: .serif))
+                    .lineSpacing(6)
+                    .focused($isTextFieldFocused)
+                    .scrollContentBackground(.hidden)
+                    .background(Color.white)
+                    .foregroundColor(.black)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(30)
+                    .overlay(
+                        Group {
+                            if noteText.isEmpty && !isTextFieldFocused {
+                                Text("Begin typing based on the words above...")
+                                    .font(.system(size: 18, weight: .regular, design: .serif))
+                                    .foregroundColor(.secondary.opacity(0.6))
+                                    .padding(.top, 30)
+                                    .padding(.leading, 30)
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                                    .allowsHitTesting(false)
+                            }
+                        }
+                    )
+                    .onTapGesture {
+                        withAnimation(.easeInOut(duration: 0.4)) {
+                            opacity = opacity == 1.0 ? 0.0 : 1.0
                         }
                     }
-                )
-                .onTapGesture {
-                    withAnimation(.easeInOut(duration: 0.4)) {
-                        opacity = opacity == 1.0 ? 0.0 : 1.0
+                
+                // Formatting toolbar overlay when text is selected
+                if showFormatToolbar && !selectedText.isEmpty {
+                    HStack(spacing: 16) {
+                        Button(action: { formatSelectedText(style: .bold) }) {
+                            Image(systemName: "bold")
+                                .frame(width: 40, height: 30)
+                                .foregroundColor(.black)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Bold")
+                        
+                        Button(action: { formatSelectedText(style: .underline) }) {
+                            Image(systemName: "underline")
+                                .frame(width: 40, height: 30)
+                                .foregroundColor(.black)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Underline")
+                        
+                        Button(action: { formatSelectedText(style: .italic) }) {
+                            Image(systemName: "italic")
+                                .frame(width: 40, height: 30)
+                                .foregroundColor(.black)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Italic")
                     }
+                    .padding(8)
+                    .background(Color(NSColor.windowBackgroundColor))
+                    .cornerRadius(8)
+                    .shadow(radius: 2)
+                    .padding(.top, 10)
                 }
+            }
             
             // Word count in footer
             HStack {
