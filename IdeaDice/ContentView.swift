@@ -86,6 +86,38 @@ class HistoryManager: ObservableObject {
         }
     }
     
+    // Toggle lock status for the current entry
+    func toggleLockStatus() -> Bool {
+        guard let currentEntry = currentlyEditingEntry,
+              let index = entries.firstIndex(where: { $0.id == currentEntry.id }) else {
+            return false
+        }
+        
+        // Toggle lock status
+        entries[index].isLocked.toggle()
+        
+        // Update current entry reference
+        if entries[index].isLocked {
+            // If we're locking, clear the editing reference
+            currentlyEditingEntry = nil
+        } else {
+            // If we're unlocking, update the reference
+            currentlyEditingEntry = entries[index]
+        }
+        
+        saveEntries()
+        return entries[index].isLocked
+    }
+    
+    // Check if the current content is locked
+    func isCurrentContentLocked() -> Bool {
+        if let entryId = currentlyEditingEntry?.id,
+           let entry = entries.first(where: { $0.id == entryId }) {
+            return entry.isLocked
+        }
+        return false
+    }
+    
     // Auto-save with debounce
     func autoSave(_ text: String) {
         // Cancel existing timer
@@ -137,6 +169,7 @@ struct ContentView: View {
     @State private var selectionObserver: Any?
     @State private var showSidebar: Bool = false
     @ObservedObject private var historyManager = HistoryManager.shared
+    @State private var isLocked: Bool = false
     
     // References to card views for animation
     @State private var nounCard: WordCardView?
@@ -274,7 +307,7 @@ struct ContentView: View {
             guard let textView = notification.object as? NSTextView else { return }
             
             let selectedRange = textView.selectedRange()
-            if selectedRange.length > 0 {
+            if selectedRange.length > 0 && !isLocked {
                 let selectedText = (textView.string as NSString).substring(with: selectedRange)
                 self.selectedText = selectedText
                 self.showFormatToolbar = true
@@ -283,6 +316,20 @@ struct ContentView: View {
                 self.showFormatToolbar = false
             }
         }
+    }
+    
+    // Function to toggle lock status
+    func toggleLockStatus() {
+        // Check if we have content to lock
+        guard !noteText.isEmpty else { return }
+        
+        // If we don't have a current entry yet, save one first
+        if historyManager.currentlyEditingEntry == nil {
+            historyManager.saveEntry(noteText)
+        }
+        
+        // Toggle lock status in history manager
+        isLocked = historyManager.toggleLockStatus()
     }
     
     var mainContent: some View {
@@ -374,8 +421,11 @@ struct ContentView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .padding(30)
                         .scrollIndicators(.hidden)
+                        .disabled(isLocked)
                         .onChange(of: noteText) { _, newValue in
-                            historyManager.autoSave(newValue)
+                            if !isLocked {
+                                historyManager.autoSave(newValue)
+                            }
                         }
                         .overlay(
                             Group {
@@ -387,6 +437,25 @@ struct ContentView: View {
                                         .padding(.leading, 30)
                                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                                         .allowsHitTesting(false)
+                                }
+                                
+                                // Lock overlay when content is locked
+                                if isLocked {
+                                    ZStack {
+                                        Color.black.opacity(0.02)
+                                        VStack {
+                                            Image(systemName: "lock.fill")
+                                                .font(.system(size: 20))
+                                                .foregroundColor(.black.opacity(0.3))
+                                            Text("This writing is locked")
+                                                .font(.system(size: 14, design: .serif))
+                                                .foregroundColor(.black.opacity(0.5))
+                                        }
+                                        .padding(20)
+                                        .background(Color.white.opacity(0.7))
+                                        .cornerRadius(12)
+                                    }
+                                    .allowsHitTesting(false)
                                 }
                             }
                         )
@@ -421,6 +490,24 @@ struct ContentView: View {
                     
                     HStack(spacing: 16) {
                         Button {
+                            toggleLockStatus()
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: isLocked ? "lock.fill" : "lock.open.fill")
+                                    .font(.system(size: 10))
+                                Text(isLocked ? "Unlock" : "Lock")
+                                    .font(.system(size: 12, weight: .regular, design: .monospaced))
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(isLocked ? Color.gray.opacity(0.2) : Color.black.opacity(0.08))
+                            .foregroundColor(isLocked ? .black.opacity(0.7) : .black.opacity(0.6))
+                            .cornerRadius(12)
+                        }
+                        .buttonStyle(.plain)
+                        .help(isLocked ? "Unlock to enable editing" : "Lock to prevent further edits")
+                        
+                        Button {
                             noteText = ""
                         } label: {
                             Text("Clear")
@@ -429,15 +516,20 @@ struct ContentView: View {
                                 .opacity(0.5)
                         }
                         .buttonStyle(.plain)
+                        .disabled(isLocked)
                         
                         Button {
-                            // Save current entry before rolling new words
-                            if !noteText.isEmpty {
-                                historyManager.saveEntry(noteText)
-                            }
-                            
-                            rollDice()
+                            // Clear text and roll new words
                             noteText = ""
+                            // Clear current entry reference
+                            historyManager.currentlyEditingEntry = nil
+                            rollDice()
+                            // Reset lock state
+                            isLocked = false
+                            // Close sidebar
+                            withAnimation(.spring()) {
+                                showSidebar = false
+                            }
                         } label: {
                             Text("Save & New")
                                 .font(.system(size: 12, weight: .regular, design: .monospaced))
@@ -544,6 +636,9 @@ struct ContentView: View {
                             noteText = entry.content
                             historyManager.setCurrentEntry(entry)
                             
+                            // Update lock state for this entry
+                            isLocked = entry.isLocked
+                            
                             // Close the sidebar after selection
                             withAnimation(.spring()) {
                                 showSidebar = false
@@ -617,6 +712,8 @@ struct ContentView: View {
                 // Clear current entry reference
                 historyManager.currentlyEditingEntry = nil
                 rollDice()
+                // Reset lock state
+                isLocked = false
                 // Close sidebar
                 withAnimation(.spring()) {
                     showSidebar = false
