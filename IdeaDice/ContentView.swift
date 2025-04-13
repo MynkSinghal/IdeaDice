@@ -567,34 +567,32 @@ struct ContentView: View {
                 
                 // Word count in footer
                 HStack {
+                    // Left side stats
                     HStack(spacing: 16) {
                         // Time tracking
-                        HStack(spacing: 2) {
+                        HStack(spacing: 4) {
                             Image(systemName: "clock")
-                                .font(.system(size: 10))
-                                .foregroundColor(.secondary)
-                                .opacity(0.6)
+                                .font(.system(size: 11))
+                                .foregroundColor(.black.opacity(0.7))
                             Text(formatTimeInterval(elapsedWritingTime))
                                 .font(.system(size: 12, weight: .regular, design: .monospaced))
-                                .foregroundColor(.secondary)
-                                .opacity(0.5)
+                                .foregroundColor(.black.opacity(0.7))
                         }
                         
                         // Word count
-                        HStack(spacing: 2) {
+                        HStack(spacing: 4) {
                             Image(systemName: "text.word.count")
-                                .font(.system(size: 10))
-                                .foregroundColor(.secondary)
-                                .opacity(0.6)
+                                .font(.system(size: 11))
+                                .foregroundColor(.black.opacity(0.7))
                             Text("\(wordCount) words")
                                 .font(.system(size: 12, weight: .regular, design: .monospaced))
-                                .foregroundColor(.secondary)
-                                .opacity(0.5)
+                                .foregroundColor(.black.opacity(0.7))
                         }
                     }
                     
                     Spacer()
                     
+                    // Right side actions
                     HStack(spacing: 16) {
                         Button {
                             toggleLockStatus()
