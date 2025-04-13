@@ -58,13 +58,47 @@ class HistoryManager: ObservableObject {
                 currentlyEditingEntry = updatedEntry
                 saveEntries()
             }
-        } else {
-            // Create a new entry
-            let entry = WritingEntry.createFromText(text)
-            entries.insert(entry, at: 0) // Add to the beginning for newest first
-            currentlyEditingEntry = entry
+        } else if currentlyViewingLockedEntryId == nil {
+            // Only create a new entry if we're not viewing a locked entry
+            // and not editing an existing entry
+            
+            // Check if there's already an identical entry to prevent duplication
+            let existingEntryIndex = entries.firstIndex { 
+                $0.content == text || ($0.title == getTitle(from: text) && $0.wordCount == getWordCount(from: text)) 
+            }
+            
+            if let index = existingEntryIndex {
+                // If there's an identical entry, just update its timestamp
+                var existingEntry = entries[index]
+                existingEntry.date = Date()
+                entries[index] = existingEntry
+                currentlyEditingEntry = existingEntry
+                
+                // Move to the top
+                if index > 0 {
+                    entries.remove(at: index)
+                    entries.insert(existingEntry, at: 0)
+                }
+            } else {
+                // Create a new entry
+                let entry = WritingEntry.createFromText(text)
+                entries.insert(entry, at: 0) // Add to the beginning for newest first
+                currentlyEditingEntry = entry
+            }
+            
             saveEntries()
         }
+    }
+    
+    // Helper to get title from text
+    private func getTitle(from text: String) -> String {
+        let firstLine = text.split(separator: "\n").first ?? ""
+        return String(firstLine.prefix(30))
+    }
+    
+    // Helper to get word count from text
+    private func getWordCount(from text: String) -> Int {
+        return text.split(separator: " ").count
     }
     
     // Set the currently editing entry without creating a duplicate
@@ -88,31 +122,43 @@ class HistoryManager: ObservableObject {
     
     // Toggle lock status for the current entry
     func toggleLockStatus() -> Bool {
-        guard let currentEntry = currentlyEditingEntry,
-              let index = entries.firstIndex(where: { $0.id == currentEntry.id }) else {
+        // First check if we have a locked entry being viewed
+        if let entryId = currentlyViewingLockedEntryId,
+           let index = entries.firstIndex(where: { $0.id == entryId }) {
+            // Unlocking a locked entry
+            entries[index].isLocked = false
+            currentlyEditingEntry = entries[index]
+            currentlyViewingLockedEntryId = nil
+            saveEntries()
             return false
         }
         
-        // Toggle lock status
-        entries[index].isLocked.toggle()
-        
-        // Update current entry reference
-        if entries[index].isLocked {
-            // If we're locking, clear the editing reference
-            let entryId = entries[index].id
-            currentlyEditingEntry = nil
+        // Then check regular entry being edited
+        if let currentEntry = currentlyEditingEntry,
+           let index = entries.firstIndex(where: { $0.id == currentEntry.id }) {
+            // Toggle lock status
+            entries[index].isLocked.toggle()
             
-            // But keep a reference to which entry is being viewed
-            // by creating a special reference
-            currentlyViewingLockedEntryId = entryId
-        } else {
-            // If we're unlocking, update the reference
-            currentlyEditingEntry = entries[index]
-            currentlyViewingLockedEntryId = nil
+            // Update current entry reference
+            if entries[index].isLocked {
+                // If we're locking, clear the editing reference
+                let entryId = entries[index].id
+                currentlyEditingEntry = nil
+                
+                // But keep a reference to which entry is being viewed
+                // by creating a special reference
+                currentlyViewingLockedEntryId = entryId
+            } else {
+                // If we're unlocking, update the reference
+                currentlyEditingEntry = entries[index]
+                currentlyViewingLockedEntryId = nil
+            }
+            
+            saveEntries()
+            return entries[index].isLocked
         }
         
-        saveEntries()
-        return entries[index].isLocked
+        return false
     }
     
     // A reference to the locked entry being viewed (not edited)
@@ -187,6 +233,9 @@ struct ContentView: View {
     @State private var showSidebar: Bool = false
     @ObservedObject private var historyManager = HistoryManager.shared
     @State private var isLocked: Bool = false
+    @State private var writingStartTime: Date?
+    @State private var elapsedWritingTime: TimeInterval = 0
+    @State private var writingTimer: Timer?
     
     // References to card views for animation
     @State private var nounCard: WordCardView?
@@ -302,10 +351,12 @@ struct ContentView: View {
             setupSelectionObserver()
         }
         .onDisappear {
-            // Clean up observers
+            // Clean up observers and timers
             if let observer = selectionObserver {
                 NotificationCenter.default.removeObserver(observer)
             }
+            
+            writingTimer?.invalidate()
         }
     }
     
@@ -449,6 +500,11 @@ struct ContentView: View {
                         .onChange(of: noteText) { _, newValue in
                             if !isLocked {
                                 historyManager.autoSave(newValue)
+                                
+                                // Start the writing timer if it's not already running
+                                if writingStartTime == nil && !newValue.isEmpty {
+                                    startWritingTimer()
+                                }
                             } else {
                                 // If locked, revert any changes by restoring content from history
                                 if let entryId = historyManager.currentlyViewingLockedEntryId ?? historyManager.currentlyEditingEntry?.id,
@@ -511,10 +567,25 @@ struct ContentView: View {
                 
                 // Word count in footer
                 HStack {
-                    Text("\(wordCount) words")
-                        .font(.system(size: 12, weight: .regular, design: .monospaced))
-                        .foregroundColor(.secondary)
-                        .opacity(0.5)
+                    HStack(spacing: 16) {
+                        // Time tracking
+                        HStack(spacing: 2) {
+                            Image(systemName: "clock")
+                                .font(.system(size: 10))
+                                .foregroundColor(.secondary)
+                                .opacity(0.6)
+                            Text(formatTimeInterval(elapsedWritingTime))
+                                .font(.system(size: 12, weight: .regular, design: .monospaced))
+                                .foregroundColor(.secondary)
+                                .opacity(0.5)
+                        }
+                        
+                        // Word count
+                        Text("\(wordCount) words")
+                            .font(.system(size: 12, weight: .regular, design: .monospaced))
+                            .foregroundColor(.secondary)
+                            .opacity(0.5)
+                    }
                     
                     Spacer()
                     
@@ -556,6 +627,8 @@ struct ContentView: View {
                             rollDice()
                             // Reset lock state
                             isLocked = false
+                            // Reset writing timer
+                            resetWritingTimer()
                             // Close sidebar
                             withAnimation(.spring()) {
                                 showSidebar = false
@@ -665,6 +738,9 @@ struct ContentView: View {
                             // Load this entry without creating a duplicate
                             noteText = entry.content
                             
+                            // Reset timer when loading a new entry
+                            resetWritingTimer()
+                            
                             // Handle locked entry differently
                             if entry.isLocked {
                                 historyManager.currentlyEditingEntry = nil
@@ -672,6 +748,9 @@ struct ContentView: View {
                             } else {
                                 historyManager.setCurrentEntry(entry)
                                 historyManager.currentlyViewingLockedEntryId = nil
+                                
+                                // Only start timer for unlocked entries
+                                startWritingTimer()
                             }
                             
                             // Update lock state for this entry
@@ -752,6 +831,8 @@ struct ContentView: View {
                 rollDice()
                 // Reset lock state
                 isLocked = false
+                // Reset writing timer
+                resetWritingTimer()
                 // Close sidebar
                 withAnimation(.spring()) {
                     showSidebar = false
@@ -815,6 +896,38 @@ struct ContentView: View {
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         return formatter.string(from: date)
+    }
+    
+    // Helper function to format time interval
+    func formatTimeInterval(_ interval: TimeInterval) -> String {
+        let minutes = Int(interval) / 60
+        let seconds = Int(interval) % 60
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
+    
+    // Start the writing timer
+    func startWritingTimer() {
+        // Only start if not already tracking
+        guard writingStartTime == nil else { return }
+        
+        // Initialize the timer
+        writingStartTime = Date()
+        elapsedWritingTime = 0
+        
+        // Create a timer that updates every second
+        writingTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            if let startTime = writingStartTime {
+                elapsedWritingTime = Date().timeIntervalSince(startTime)
+            }
+        }
+    }
+    
+    // Reset the writing timer
+    func resetWritingTimer() {
+        writingTimer?.invalidate()
+        writingTimer = nil
+        writingStartTime = nil
+        elapsedWritingTime = 0
     }
 }
 
