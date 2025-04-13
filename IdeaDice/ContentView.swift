@@ -3,12 +3,13 @@ import AppKit
 import Foundation
 
 // Model for storing writing entries
-struct WritingEntry: Identifiable, Codable {
+struct WritingEntry: Identifiable, Codable, Equatable {
     var id = UUID()
     var date: Date
     var title: String
     var content: String
     var wordCount: Int
+    var isLocked: Bool = false
     
     static func createFromText(_ text: String) -> WritingEntry {
         let firstLine = text.split(separator: "\n").first ?? ""
@@ -22,6 +23,10 @@ struct WritingEntry: Identifiable, Codable {
             wordCount: wordCount
         )
     }
+    
+    static func == (lhs: WritingEntry, rhs: WritingEntry) -> Bool {
+        lhs.id == rhs.id
+    }
 }
 
 // History manager to persist and retrieve writing entries
@@ -29,6 +34,7 @@ class HistoryManager: ObservableObject {
     static let shared = HistoryManager()
     
     @Published var entries: [WritingEntry] = []
+    @Published var currentlyEditingEntry: WritingEntry?
     private let entriesKey = "writingEntries"
     private var saveTimer: Timer?
     
@@ -39,9 +45,45 @@ class HistoryManager: ObservableObject {
     func saveEntry(_ text: String) {
         guard !text.isEmpty else { return }
         
-        let entry = WritingEntry.createFromText(text)
-        entries.insert(entry, at: 0)
-        saveEntries()
+        // If we're currently editing an entry, update it instead of creating a new one
+        if let currentEntry = currentlyEditingEntry, !currentEntry.isLocked {
+            if let index = entries.firstIndex(where: { $0.id == currentEntry.id }) {
+                // Update the existing entry
+                var updatedEntry = currentEntry
+                updatedEntry.title = String(text.split(separator: "\n").first?.prefix(30) ?? "")
+                updatedEntry.content = text
+                updatedEntry.wordCount = text.split(separator: " ").count
+                
+                entries[index] = updatedEntry
+                currentlyEditingEntry = updatedEntry
+                saveEntries()
+            }
+        } else {
+            // Create a new entry
+            let entry = WritingEntry.createFromText(text)
+            entries.insert(entry, at: 0) // Add to the beginning for newest first
+            currentlyEditingEntry = entry
+            saveEntries()
+        }
+    }
+    
+    // Set the currently editing entry without creating a duplicate
+    func setCurrentEntry(_ entry: WritingEntry) {
+        currentlyEditingEntry = entry
+    }
+    
+    // Lock an entry to prevent further edits
+    func lockEntry(_ entryId: UUID) {
+        if let index = entries.firstIndex(where: { $0.id == entryId }) {
+            entries[index].isLocked = true
+            
+            // If this is the current entry, clear the current editing state
+            if currentlyEditingEntry?.id == entryId {
+                currentlyEditingEntry = nil
+            }
+            
+            saveEntries()
+        }
     }
     
     // Auto-save with debounce
@@ -498,8 +540,14 @@ struct ContentView: View {
                 LazyVStack(spacing: 12) {
                     ForEach(historyManager.entries) { entry in
                         Button {
-                            // Load this entry
+                            // Load this entry without creating a duplicate
                             noteText = entry.content
+                            historyManager.setCurrentEntry(entry)
+                            
+                            // Close the sidebar after selection
+                            withAnimation(.spring()) {
+                                showSidebar = false
+                            }
                         } label: {
                             VStack(alignment: .leading, spacing: 6) {
                                 Text(entry.title)
@@ -514,9 +562,17 @@ struct ContentView: View {
                                     
                                     Spacer()
                                     
-                                    Text("\(entry.wordCount) words")
-                                        .font(.system(size: 12, design: .serif))
-                                        .foregroundColor(.black.opacity(0.6))
+                                    HStack(spacing: 6) {
+                                        if entry.isLocked {
+                                            Image(systemName: "lock.fill")
+                                                .font(.system(size: 10))
+                                                .foregroundColor(.black.opacity(0.5))
+                                        }
+                                        
+                                        Text("\(entry.wordCount) words")
+                                            .font(.system(size: 12, design: .serif))
+                                            .foregroundColor(.black.opacity(0.6))
+                                    }
                                 }
                             }
                             .padding(12)
@@ -531,6 +587,14 @@ struct ContentView: View {
                         }
                         .buttonStyle(.plain)
                         .contextMenu {
+                            if !entry.isLocked {
+                                Button {
+                                    historyManager.lockEntry(entry.id)
+                                } label: {
+                                    Label("Lock Entry", systemImage: "lock")
+                                }
+                            }
+                            
                             Button {
                                 if let index = historyManager.entries.firstIndex(where: { $0.id == entry.id }) {
                                     historyManager.deleteEntry(at: IndexSet(integer: index))
@@ -550,6 +614,8 @@ struct ContentView: View {
             Button {
                 // Clear text and roll new words
                 noteText = ""
+                // Clear current entry reference
+                historyManager.currentlyEditingEntry = nil
                 rollDice()
                 // Close sidebar
                 withAnimation(.spring()) {
