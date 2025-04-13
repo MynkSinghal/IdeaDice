@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 http://docs.oasis-open.org/xliff/v1.2/os/xliff-core-1.2-strict.xsd">
+  <file original="IdeaDice/IdeaDice-InfoPlist.xcstrings" source-language="en" target-language="en" datatype="plaintext">
+    <header>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.3" build-num="16E140"/>
+    </header>
+    <body>
+      <trans-unit id="CFBundleName" xml:space="preserve">
+        <source>IdeaDice</source>
+        <target state="new">IdeaDice</target>
+        <note>Bundle name</note>
+      </trans-unit>
+      <trans-unit id="NSHumanReadableCopyright" xml:space="preserve">
+        <source/>
+        <target state="new"/>
+        <note>Copyright (human-readable)</note>
+      </trans-unit>
+    </body>
+  </file>
+  <file original="IdeaDice/Localizable.xcstrings" source-language="en" target-language="en" datatype="plaintext">
+    <header>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.3" build-num="16E140"/>
+    </header>
+    <body>
+      <trans-unit id="%lld words" xml:space="preserve">
+        <source>%lld words</source>
+        <target state="new">%lld words</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="%lld%%" xml:space="preserve">
+        <source>%lld%%</source>
+        <target state="new">%lld%%</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="A minimalist writing tool designed to spark creativity through random word prompts. Write freely without distraction to develop creative thinking skills." xml:space="preserve">
+        <source>A minimalist writing tool designed to spark creativity through random word prompts. Write freely without distraction to develop creative thinking skills.</source>
+        <target state="new">A minimalist writing tool designed to spark creativity through random word prompts. Write freely without distraction to develop creative thinking skills.</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="A simple exercise to develop your creative thinking and writing skills." xml:space="preserve">
+        <source>A simple exercise to develop your creative thinking and writing skills.</source>
+        <target state="new">A simple exercise to develop your creative thinking and writing skills.</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="About" xml:space="preserve">
+        <source>About</source>
+        <target state="new">About</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Ambient Sounds" xml:space="preserve">
+        <source>Ambient Sounds</source>
+        <target state="new">Ambient Sounds</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Ambient sounds for focus" xml:space="preserve">
+        <source>Ambient sounds for focus</source>
+        <target state="new">Ambient sounds for focus</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Backspace" xml:space="preserve">
+        <source>Backspace</source>
+        <target state="new">Backspace</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Begin" xml:space="preserve">
+        <source>Begin</source>
+        <target state="new">Begin</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Begin typing based on the words above..." xml:space="preserve">
+        <source>Begin typing based on the words above...</source>
+        <target state="new">Begin typing based on the words above...</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Bold" xml:space="preserve">
+        <source>Bold</source>
+        <target state="new">Bold</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Category" xml:space="preserve">
+        <source>Category</source>
+        <target state="new">Category</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Change text font" xml:space="preserve">
+        <source>Change text font</source>
+        <target state="new">Change text font</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Clear" xml:space="preserve">
+        <source>Clear</source>
+        <target state="new">Clear</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Close" xml:space="preserve">
+        <source>Close</source>
+        <target state="new">Close</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Delete" xml:space="preserve">
+        <source>Delete</source>
+        <target state="new">Delete</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Disable backspace for flow writing" xml:space="preserve">
+        <source>Disable backspace for flow writing</source>
+        <target state="new">Disable backspace for flow writing</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Enable backspace" xml:space="preserve">
+        <source>Enable backspace</source>
+        <target state="new">Enable backspace</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Finish" xml:space="preserve">
+        <source>Finish</source>
+        <target state="new">Finish</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Flow Writing" xml:space="preserve">
+        <source>Flow Writing</source>
+        <target state="new">Flow Writing</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Font" xml:space="preserve">
+        <source>Font</source>
+        <target state="new">Font</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Generate New Idea" xml:space="preserve">
+        <source>Generate New Idea</source>
+        <target state="new">Generate New Idea</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Ideas" xml:space="preserve">
+        <source>Ideas</source>
+        <target state="new">Ideas</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Italic" xml:space="preserve">
+        <source>Italic</source>
+        <target state="new">Italic</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Lock" xml:space="preserve">
+        <source>Lock</source>
+        <target state="new">Lock</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Lock Entry" xml:space="preserve">
+        <source>Lock Entry</source>
+        <target state="new">Lock Entry</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Lock to prevent further edits" xml:space="preserve">
+        <source>Lock to prevent further edits</source>
+        <target state="new">Lock to prevent further edits</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="New Writing" xml:space="preserve">
+        <source>New Writing</source>
+        <target state="new">New Writing</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Next" xml:space="preserve">
+        <source>Next</source>
+        <target state="new">Next</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Pause" xml:space="preserve">
+        <source>Pause</source>
+        <target state="new">Pause</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Play" xml:space="preserve">
+        <source>Play</source>
+        <target state="new">Play</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Previous" xml:space="preserve">
+        <source>Previous</source>
+        <target state="new">Previous</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Quick Tutorial" xml:space="preserve">
+        <source>Quick Tutorial</source>
+        <target state="new">Quick Tutorial</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Roll new words" xml:space="preserve">
+        <source>Roll new words</source>
+        <target state="new">Roll new words</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Settings" xml:space="preserve">
+        <source>Settings</source>
+        <target state="new">Settings</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="This writing is locked" xml:space="preserve">
+        <source>This writing is locked</source>
+        <target state="new">This writing is locked</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Toggle History" xml:space="preserve">
+        <source>Toggle History</source>
+        <target state="new">Toggle History</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Underline" xml:space="preserve">
+        <source>Underline</source>
+        <target state="new">Underline</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Unlock" xml:space="preserve">
+        <source>Unlock</source>
+        <target state="new">Unlock</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Unlock to enable editing" xml:space="preserve">
+        <source>Unlock to enable editing</source>
+        <target state="new">Unlock to enable editing</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Volume" xml:space="preserve">
+        <source>Volume</source>
+        <target state="new">Volume</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="Writing History" xml:space="preserve">
+        <source>Writing History</source>
+        <target state="new">Writing History</target>
+        <note/>
+      </trans-unit>
+      <trans-unit id="•" xml:space="preserve">
+        <source>•</source>
+        <target state="new">•</target>
+        <note/>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

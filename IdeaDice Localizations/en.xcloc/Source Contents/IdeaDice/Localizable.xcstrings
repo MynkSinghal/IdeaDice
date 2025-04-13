@@ -1,0 +1,135 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%lld words" : {
+
+    },
+    "%lld%%" : {
+
+    },
+    "•" : {
+
+    },
+    "A minimalist writing tool designed to spark creativity through random word prompts. Write freely without distraction to develop creative thinking skills." : {
+
+    },
+    "A simple exercise to develop your creative thinking and writing skills." : {
+
+    },
+    "About" : {
+
+    },
+    "Ambient Sounds" : {
+
+    },
+    "Ambient sounds for focus" : {
+
+    },
+    "Backspace" : {
+
+    },
+    "Begin" : {
+
+    },
+    "Begin typing based on the words above..." : {
+
+    },
+    "Bold" : {
+
+    },
+    "Category" : {
+
+    },
+    "Change text font" : {
+
+    },
+    "Clear" : {
+
+    },
+    "Close" : {
+
+    },
+    "Delete" : {
+
+    },
+    "Disable backspace for flow writing" : {
+
+    },
+    "Enable backspace" : {
+
+    },
+    "Finish" : {
+
+    },
+    "Flow Writing" : {
+
+    },
+    "Font" : {
+
+    },
+    "Generate New Idea" : {
+
+    },
+    "Ideas" : {
+
+    },
+    "Italic" : {
+
+    },
+    "Lock" : {
+
+    },
+    "Lock Entry" : {
+
+    },
+    "Lock to prevent further edits" : {
+
+    },
+    "New Writing" : {
+
+    },
+    "Next" : {
+
+    },
+    "Pause" : {
+
+    },
+    "Play" : {
+
+    },
+    "Previous" : {
+
+    },
+    "Quick Tutorial" : {
+
+    },
+    "Roll new words" : {
+
+    },
+    "Settings" : {
+
+    },
+    "This writing is locked" : {
+
+    },
+    "Toggle History" : {
+
+    },
+    "Underline" : {
+
+    },
+    "Unlock" : {
+
+    },
+    "Unlock to enable editing" : {
+
+    },
+    "Volume" : {
+
+    },
+    "Writing History" : {
+
+    }
+  },
+  "version" : "1.0"
+}
