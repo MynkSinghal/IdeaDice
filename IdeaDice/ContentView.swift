@@ -99,22 +99,39 @@ class HistoryManager: ObservableObject {
         // Update current entry reference
         if entries[index].isLocked {
             // If we're locking, clear the editing reference
+            let entryId = entries[index].id
             currentlyEditingEntry = nil
+            
+            // But keep a reference to which entry is being viewed
+            // by creating a special reference
+            currentlyViewingLockedEntryId = entryId
         } else {
             // If we're unlocking, update the reference
             currentlyEditingEntry = entries[index]
+            currentlyViewingLockedEntryId = nil
         }
         
         saveEntries()
         return entries[index].isLocked
     }
     
+    // A reference to the locked entry being viewed (not edited)
+    @Published var currentlyViewingLockedEntryId: UUID?
+    
     // Check if the current content is locked
     func isCurrentContentLocked() -> Bool {
+        // First check if we have a locked entry being viewed
+        if let entryId = currentlyViewingLockedEntryId,
+           let entry = entries.first(where: { $0.id == entryId }) {
+            return entry.isLocked
+        }
+        
+        // Then check the current editing entry
         if let entryId = currentlyEditingEntry?.id,
            let entry = entries.first(where: { $0.id == entryId }) {
             return entry.isLocked
         }
+        
         return false
     }
     
@@ -422,9 +439,27 @@ struct ContentView: View {
                         .padding(30)
                         .scrollIndicators(.hidden)
                         .disabled(isLocked)
+                        .onTapGesture {
+                            if !isLocked {
+                                withAnimation(.easeInOut(duration: 0.4)) {
+                                    opacity = opacity == 1.0 ? 0.0 : 1.0
+                                }
+                            }
+                        }
                         .onChange(of: noteText) { _, newValue in
                             if !isLocked {
                                 historyManager.autoSave(newValue)
+                            } else {
+                                // If locked, revert any changes by restoring content from history
+                                if let entryId = historyManager.currentlyViewingLockedEntryId ?? historyManager.currentlyEditingEntry?.id,
+                                   let entry = historyManager.entries.first(where: { $0.id == entryId }) {
+                                    DispatchQueue.main.async {
+                                        // Only revert if the content was changed
+                                        if noteText != entry.content {
+                                            noteText = entry.content
+                                        }
+                                    }
+                                }
                             }
                         }
                         .overlay(
@@ -459,11 +494,6 @@ struct ContentView: View {
                                 }
                             }
                         )
-                        .onTapGesture {
-                            withAnimation(.easeInOut(duration: 0.4)) {
-                                opacity = opacity == 1.0 ? 0.0 : 1.0
-                            }
-                        }
                     
                     // Formatting toolbar overlay when text is selected
                     if showFormatToolbar && !selectedText.isEmpty {
@@ -634,7 +664,15 @@ struct ContentView: View {
                         Button {
                             // Load this entry without creating a duplicate
                             noteText = entry.content
-                            historyManager.setCurrentEntry(entry)
+                            
+                            // Handle locked entry differently
+                            if entry.isLocked {
+                                historyManager.currentlyEditingEntry = nil
+                                historyManager.currentlyViewingLockedEntryId = entry.id
+                            } else {
+                                historyManager.setCurrentEntry(entry)
+                                historyManager.currentlyViewingLockedEntryId = nil
+                            }
                             
                             // Update lock state for this entry
                             isLocked = entry.isLocked
