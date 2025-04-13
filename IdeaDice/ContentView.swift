@@ -247,9 +247,11 @@ struct ContentView: View {
     @State private var isLocked: Bool = false
     @State private var writingStartTime: Date?
     @State private var elapsedWritingTime: TimeInterval = 0
+    @State private var pausedWritingTime: TimeInterval = 0
     @State private var writingTimer: Timer?
     @State private var noBackspaceMode: Bool = false
     @State private var keyDownMonitor: Any?
+    @State private var backspaceAttempted: Bool = false
     
     // References to card views for animation
     @State private var nounCard: WordCardView?
@@ -422,17 +424,50 @@ struct ContentView: View {
         
         // Stop timer if content is locked
         if isLocked {
-            stopWritingTimer()
+            pauseWritingTimer()
         } else {
-            // Restart timer if unlocked
+            // Resume timer if unlocked
+            resumeWritingTimer()
+        }
+    }
+    
+    // Pause the writing timer and save the current elapsed time
+    func pauseWritingTimer() {
+        // Save the current elapsed time
+        if let startTime = writingStartTime {
+            pausedWritingTime = elapsedWritingTime
+        }
+        
+        // Stop the timer
+        writingTimer?.invalidate()
+        writingTimer = nil
+        writingStartTime = nil
+    }
+    
+    // Resume the writing timer from where it left off
+    func resumeWritingTimer() {
+        // Only resume if we have a paused time
+        guard pausedWritingTime > 0 else {
+            // If no paused time, just start fresh
             startWritingTimer()
+            return
+        }
+        
+        // Initialize the timer with the paused time
+        writingStartTime = Date().addingTimeInterval(-pausedWritingTime)
+        elapsedWritingTime = pausedWritingTime
+        
+        // Create a timer that updates every second
+        writingTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            if let startTime = writingStartTime {
+                elapsedWritingTime = Date().timeIntervalSince(startTime)
+            }
         }
     }
     
     // Stop the writing timer without resetting
     func stopWritingTimer() {
-        writingTimer?.invalidate()
-        writingTimer = nil
+        pauseWritingTimer()
     }
     
     var mainContent: some View {
@@ -645,9 +680,22 @@ struct ContentView: View {
                             }
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)
-                            .background(noBackspaceMode ? Color.black.opacity(0.12) : Color.black.opacity(0.06))
-                            .foregroundColor(.black.opacity(0.7))
+                            .background(
+                                Group {
+                                    if backspaceAttempted && noBackspaceMode {
+                                        Color.red.opacity(0.15)
+                                    } else {
+                                        noBackspaceMode ? Color.black.opacity(0.12) : Color.black.opacity(0.06)
+                                    }
+                                }
+                            )
+                            .foregroundColor(backspaceAttempted && noBackspaceMode ? .red : .black.opacity(0.7))
                             .cornerRadius(12)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(backspaceAttempted && noBackspaceMode ? Color.red.opacity(0.4) : Color.clear, lineWidth: 1)
+                            )
+                            .shadow(color: backspaceAttempted && noBackspaceMode ? Color.red.opacity(0.2) : Color.clear, radius: 3, x: 0, y: 0)
                         }
                         .buttonStyle(.plain)
                         .help(noBackspaceMode ? "Enable backspace" : "Disable backspace for flow writing")
@@ -1040,6 +1088,9 @@ struct ContentView: View {
                 
                 // Check if backspace/delete key is pressed
                 if event.keyCode == deleteKey {
+                    // Show visual feedback that backspace was attempted
+                    self.showBackspaceAttemptFeedback()
+                    
                     // Prevent the backspace by consuming the event
                     return nil
                 }
@@ -1047,6 +1098,17 @@ struct ContentView: View {
             
             // Let all other events through
             return event
+        }
+    }
+    
+    // Show visual feedback when backspace is attempted in no-backspace mode
+    func showBackspaceAttemptFeedback() {
+        // Set flag to show visual feedback
+        self.backspaceAttempted = true
+        
+        // Reset after a short delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            self.backspaceAttempted = false
         }
     }
 }
