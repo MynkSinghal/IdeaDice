@@ -122,6 +122,7 @@ struct ContentView: View {
                 .focused($isTextFieldFocused)
                 .scrollContentBackground(.hidden)
                 .background(Color.white)
+                .foregroundColor(.black)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(30)
                 .overlay(
