@@ -19,7 +19,15 @@ struct WritingEditor: View {
     
     var body: some View {
         ZStack(alignment: .top) {
-            TextEditor(text: $noteText)
+            TextEditor(text: Binding(
+                get: { noteText },
+                set: { newValue in
+                    // Only update the text if not locked
+                    if !isLocked {
+                        noteText = newValue
+                    }
+                }
+            ))
                 .font(Font(settings.selectedFont.uiFont(size: 18)))
                 .lineSpacing(6)
                 .focused($isTextFieldFocused)
@@ -49,14 +57,12 @@ struct WritingEditor: View {
                             }
                         }
                     } else {
-                        // If locked, revert any changes by restoring content from history
+                        // If locked, immediately revert any changes by restoring content from history
                         if let entryId = historyManager.currentlyViewingLockedEntryId ?? historyManager.currentlyEditingEntry?.id,
                            let entry = historyManager.entries.first(where: { $0.id == entryId }) {
                             DispatchQueue.main.async {
-                                // Only revert if the content was changed
-                                if noteText != entry.content {
-                                    noteText = entry.content
-                                }
+                                // Always revert when locked to ensure no edits are possible
+                                noteText = entry.content
                             }
                         }
                     }
@@ -76,7 +82,10 @@ struct WritingEditor: View {
                         // Lock overlay when content is locked
                         if isLocked {
                             ZStack {
-                                Color.black.opacity(0.02)
+                                // Semi-transparent overlay to prevent interaction
+                                Color.white.opacity(0.05)
+                                    .allowsHitTesting(true)
+                                
                                 VStack {
                                     Image(systemName: "lock.fill")
                                         .font(.system(size: 20))
@@ -89,13 +98,12 @@ struct WritingEditor: View {
                                 .background(Color.white.opacity(0.7))
                                 .cornerRadius(12)
                             }
-                            .allowsHitTesting(false)
                         }
                     }
                 )
             
             // Formatting toolbar overlay when text is selected
-            if showFormatToolbar && !selectedText.isEmpty {
+            if showFormatToolbar && !selectedText.isEmpty && !isLocked {
                 GeometryReader { geometry in
                     FormatToolbar(
                         onBold: onFormatBold,

@@ -8,6 +8,12 @@ enum AppFont: String, CaseIterable, Identifiable {
     case bradleyHand = "Bradley Hand"
     case arial = "Arial"
     case annyanteMN = "Annyante MN"
+    case avenir = "Avenir"
+    case futura = "Futura"
+    case helveticaNeue = "Helvetica Neue"
+    case garamond = "Garamond"
+    case gilSans = "Gill Sans"
+    case optima = "Optima"
     
     var id: String { self.rawValue }
     
@@ -23,6 +29,18 @@ enum AppFont: String, CaseIterable, Identifiable {
             return "ArialMT"
         case .annyanteMN:
             return "AnnaiMN"
+        case .avenir:
+            return "Avenir-Book"
+        case .futura:
+            return "Futura-Medium"
+        case .helveticaNeue:
+            return "HelveticaNeue"
+        case .garamond:
+            return "AppleGaramond"
+        case .gilSans:
+            return "GillSans"
+        case .optima:
+            return "Optima"
         }
     }
     

@@ -227,13 +227,88 @@ class HistoryManager: ObservableObject {
     }
 }
 
+// Add this class above the ContentView struct definition
+class KeyMonitorController {
+    static let shared = KeyMonitorController()
+    
+    private var keyDownMonitor: Any?
+    var isMonitoringActive = false
+    
+    // Function called by ContentView to register key events
+    func startMonitoring(isLocked: @escaping () -> Bool, 
+                        isNoBackspaceMode: @escaping () -> Bool, 
+                        isTextFieldFocused: @escaping () -> Bool,
+                        onBackspaceAttempted: @escaping () -> Void) {
+        // First clean up any existing monitors
+        stopMonitoring()
+        
+        // Guard against repeated initialization attempts
+        if isMonitoringActive {
+            print("Warning: Monitoring is already active, skipping initialization")
+            return
+        }
+        
+        // Use a safer implementation with try-catch for error handling
+        do {
+            // Mark as active before attempting to create the monitor
+            isMonitoringActive = true
+            
+            // Create new monitor for key events without capture specifiers
+            if let newMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+                // Check if locked mode is on - block all keypresses
+                if isLocked() {
+                    // Cancel all key events when locked
+                    return nil
+                }
+                
+                // Only intercept backspace if no-backspace mode is on and we're focused
+                if isNoBackspaceMode() && isTextFieldFocused() {
+                    let deleteKey: UInt16 = 51 // Backspace/delete key code
+                    
+                    // Check if backspace/delete key is pressed
+                    if event.keyCode == deleteKey {
+                        // Show visual feedback that backspace was attempted
+                        onBackspaceAttempted()
+                        
+                        // Prevent the backspace by consuming the event
+                        return nil
+                    }
+                }
+                
+                // Let all other events through
+                return event
+            } {
+                // Successfully created the monitor
+                keyDownMonitor = newMonitor
+                print("Key monitor initialized successfully")
+            } else {
+                // Failed to create the monitor
+                isMonitoringActive = false
+                print("Failed to create key event monitor")
+            }
+        } catch {
+            // Something went wrong
+            isMonitoringActive = false
+            print("Error setting up key monitor: \(error)")
+        }
+    }
+    
+    func stopMonitoring() {
+        // Safety cleanup for event monitor
+        if let monitor = keyDownMonitor {
+            NSEvent.removeMonitor(monitor)
+            keyDownMonitor = nil
+        }
+        isMonitoringActive = false
+    }
+}
+
 struct ContentView: View {
     @State private var noun = WordData.randomNoun()
     @State private var verb = WordData.randomVerb()
     @State private var emotion = WordData.randomEmotion()
     @State private var noteText = ""
     @State private var isRolling = false
-    @State private var showSettings = false
     @State private var isShowingWelcome = true
     @State private var isInitialized = false
     @ObservedObject private var settings = AppSettings.shared
@@ -289,9 +364,6 @@ struct ContentView: View {
                 }
             }
         }
-        .sheet(isPresented: $showSettings) {
-            SettingsView()
-        }
         .onAppear {
             // Force new word generation on launch
             if !isInitialized {
@@ -302,23 +374,33 @@ struct ContentView: View {
                 isInitialized = true
             }
             
+            // Make sure we start from a clean state
+            cleanupKeyMonitor()
+            
             // Setup selection change notification observer
             setupSelectionObserver()
             
-            // Setup key monitor for backspace prevention
-            setupKeyMonitor()
+            // Setup key monitor for backspace prevention - after a slight delay to ensure
+            // any previous event monitors are fully cleaned up
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                setupKeyMonitor()
+            }
         }
         .onDisappear {
             // Clean up observers and timers
             if let observer = selectionObserver {
                 NotificationCenter.default.removeObserver(observer)
+                selectionObserver = nil
             }
             
-            if let keyMonitor = keyDownMonitor {
-                NSEvent.removeMonitor(keyMonitor)
-            }
+            // Use our dedicated cleanup method for key monitors
+            cleanupKeyMonitor()
             
-            writingTimer?.invalidate()
+            // Clean up timer
+            if let timer = writingTimer {
+                timer.invalidate()
+                writingTimer = nil
+            }
         }
     }
     
@@ -380,19 +462,7 @@ struct ContentView: View {
                     }
                     .buttonStyle(.plain)
                     .help("Toggle History")
-                    .padding(.trailing, 8)
-                    
-                    Button {
-                        showSettings = true
-                    } label: {
-                        Image(systemName: "gearshape")
-                            .font(.system(size: 14, weight: .light))
-                            .foregroundColor(.gray)
-                            .opacity(0.4)
-                    }
-                    .buttonStyle(.plain)
                     .padding(.trailing, 16)
-                    .help("Settings")
                 }
                 .padding(.vertical, 16)
                 .opacity(opacity)
@@ -522,27 +592,6 @@ struct ContentView: View {
                         }
                         .buttonStyle(.plain)
                         .disabled(isLocked)
-                        
-                        Button {
-                            // Clear text and roll new words
-                            noteText = ""
-                            // Clear current entry reference
-                            historyManager.currentlyEditingEntry = nil
-                            rollDice()
-                            // Reset lock state
-                            isLocked = false
-                            // Reset writing timer
-                            resetWritingTimer()
-                            // Close sidebar
-                            withAnimation(.spring()) {
-                                showSidebar = false
-                            }
-                        } label: {
-                            Text("Save & New")
-                                .font(.system(size: 12, weight: .regular, design: .monospaced))
-                                .foregroundColor(.black.opacity(0.6))
-                        }
-                        .buttonStyle(.plain)
                     }
                     .frame(alignment: .trailing)
                 }
@@ -553,42 +602,11 @@ struct ContentView: View {
                 .animation(.easeInOut(duration: 0.4), value: opacity)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            
-            // Show small sidebar toggle button when sidebar is hidden
-            if !showSidebar {
-                sidebarToggleButton
-                    .padding(.top, 70)
-                    .padding(.trailing, 16)
-                    .transition(.scale.combined(with: .opacity))
-            }
         }
     }
     
     private var wordCount: Int {
         noteText.split(separator: " ").count
-    }
-    
-    // Small sidebar toggle button that stays visible
-    var sidebarToggleButton: some View {
-        Button {
-            withAnimation(.spring()) {
-                showSidebar.toggle()
-            }
-        } label: {
-            Image(systemName: "sidebar.left")
-                .font(.system(size: 16))
-                .foregroundColor(.black)
-                .padding(10)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
-                )
-                .shadow(color: Color.black.opacity(0.15), radius: 3, x: 0, y: 2)
-        }
-        .buttonStyle(.plain)
-        .help("Show History")
     }
     
     // Helper function to format time interval
@@ -735,30 +753,13 @@ struct ContentView: View {
     
     // Setup key monitor to prevent backspace
     func setupKeyMonitor() {
-        // Remove existing monitor if any
-        if let monitor = keyDownMonitor {
-            NSEvent.removeMonitor(monitor)
-        }
-        
-        // Create new monitor
-        keyDownMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-            // Only intercept if no-backspace mode is on, we're focused, and not locked
-            if self.noBackspaceMode && self.isTextFieldFocused && !self.isLocked {
-                let deleteKey: UInt16 = 51 // Backspace/delete key code
-                
-                // Check if backspace/delete key is pressed
-                if event.keyCode == deleteKey {
-                    // Show visual feedback that backspace was attempted
-                    self.showBackspaceAttemptFeedback()
-                    
-                    // Prevent the backspace by consuming the event
-                    return nil
-                }
-            }
-            
-            // Let all other events through
-            return event
-        }
+        // Use the shared controller to start monitoring with proper closures
+        KeyMonitorController.shared.startMonitoring(
+            isLocked: { self.isLocked },
+            isNoBackspaceMode: { self.noBackspaceMode },
+            isTextFieldFocused: { self.isTextFieldFocused },
+            onBackspaceAttempted: { self.showBackspaceAttemptFeedback() }
+        )
     }
     
     // Show visual feedback when backspace is attempted in no-backspace mode
@@ -832,8 +833,13 @@ struct ContentView: View {
     enum TextStyle {
         case bold, italic, underline
     }
+    
+    // Add a dedicated cleanup method for the key monitor
+    func cleanupKeyMonitor() {
+        KeyMonitorController.shared.stopMonitoring()
+    }
 }
 
 #Preview {
     ContentView()
-} 
+}
