@@ -18,13 +18,13 @@ struct ContentView: View {
     @State private var verbCard: WordCardView?
     @State private var emotionCard: WordCardView?
     
-    // Ivory color
-    private let backgroundColor = Color(red: 255/255, green: 255/255, blue: 240/255)
+    // Ivory color - using Color.white with opacity for better compatibility
+    private let backgroundColor = Color.white
     
     var body: some View {
         ZStack {
-            // Background
-            backgroundColor.edgesIgnoringSafeArea(.all)
+            // Background - explicitly use Color.white which is more reliable
+            Color.white.edgesIgnoringSafeArea(.all)
             
             // Main content
             if isShowingWelcome {
@@ -37,7 +37,6 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showSettings) {
             SettingsView()
-                .background(backgroundColor)
         }
         .onAppear {
             print("ContentView appeared with isShowingWelcome: \(isShowingWelcome)")
@@ -91,7 +90,7 @@ struct ContentView: View {
                 } label: {
                     Image(systemName: "arrow.triangle.2.circlepath")
                         .font(.system(size: 14, weight: .light))
-                        .foregroundStyle(.secondary)
+                        .foregroundColor(.secondary)
                         .opacity(0.6)
                 }
                 .buttonStyle(.plain)
@@ -105,7 +104,7 @@ struct ContentView: View {
                 } label: {
                     Image(systemName: "gearshape")
                         .font(.system(size: 14, weight: .light))
-                        .foregroundStyle(.secondary)
+                        .foregroundColor(.secondary)
                         .opacity(0.4)
                 }
                 .buttonStyle(.plain)
@@ -122,7 +121,7 @@ struct ContentView: View {
                 .lineSpacing(6)
                 .focused($isTextFieldFocused)
                 .scrollContentBackground(.hidden)
-                .background(backgroundColor)
+                .background(Color.white)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(30)
                 .overlay(
@@ -130,7 +129,7 @@ struct ContentView: View {
                         if noteText.isEmpty && !isTextFieldFocused {
                             Text("Begin typing based on the words above...")
                                 .font(.system(size: 18, weight: .regular, design: .serif))
-                                .foregroundStyle(.secondary.opacity(0.6))
+                                .foregroundColor(.secondary.opacity(0.6))
                                 .padding(.top, 30)
                                 .padding(.leading, 30)
                                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -148,7 +147,7 @@ struct ContentView: View {
             HStack {
                 Text("\(wordCount) words")
                     .font(.system(size: 12, weight: .regular, design: .monospaced))
-                    .foregroundStyle(.secondary)
+                    .foregroundColor(.secondary)
                     .opacity(0.5)
                 
                 Spacer()
@@ -159,7 +158,7 @@ struct ContentView: View {
                     } label: {
                         Text("Clear")
                             .font(.system(size: 12, weight: .regular, design: .monospaced))
-                            .foregroundStyle(.secondary)
+                            .foregroundColor(.secondary)
                             .opacity(0.5)
                     }
                     .buttonStyle(.plain)
@@ -169,7 +168,7 @@ struct ContentView: View {
                     } label: {
                         Text("New Words")
                             .font(.system(size: 12, weight: .regular, design: .monospaced))
-                            .foregroundStyle(.secondary)
+                            .foregroundColor(.secondary)
                             .opacity(0.5)
                     }
                     .buttonStyle(.plain)
@@ -177,7 +176,7 @@ struct ContentView: View {
             }
             .padding(.horizontal, 30)
             .padding(.vertical, 10)
-            .background(backgroundColor.opacity(0.8))
+            .background(Color.white.opacity(0.8))
             .opacity(opacity)
             .animation(.easeInOut(duration: 0.4), value: opacity)
         }

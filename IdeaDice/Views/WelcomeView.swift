@@ -3,22 +3,19 @@ import SwiftUI
 struct WelcomeView: View {
     @Binding var isShowingWelcome: Bool
     
-    // Ivory background color
-    private let backgroundColor = Color(red: 255/255, green: 255/255, blue: 240/255)
-    
     var body: some View {
         VStack(spacing: 40) {
             Spacer()
             
             Text("Flow Writing")
                 .font(.system(size: 28, weight: .light, design: .serif))
-                .foregroundColor(.primary)
+                .foregroundColor(.black)
                 .kerning(2)
             
             VStack(spacing: 30) {
                 Text("A simple exercise to develop your creative thinking and writing skills.")
                     .font(.system(size: 16, weight: .regular, design: .serif))
-                    .foregroundColor(.primary)
+                    .foregroundColor(.black)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 450)
                 
@@ -56,19 +53,19 @@ struct WelcomeView: View {
             } label: {
                 Text("Begin")
                     .font(.system(size: 16, weight: .regular, design: .serif))
-                    .foregroundColor(.primary)
+                    .foregroundColor(.black)
                     .kerning(1)
                     .frame(width: 140, height: 40)
                     .overlay(
                         RoundedRectangle(cornerRadius: 4)
-                            .stroke(Color.primary.opacity(0.2), lineWidth: 0.5)
+                            .stroke(Color.black.opacity(0.2), lineWidth: 0.5)
                     )
             }
             .buttonStyle(.plain)
             .padding(.bottom, 60)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(backgroundColor)
+        .background(Color.white)
         .onAppear {
             print("WelcomeView appeared")
         }
@@ -83,12 +80,12 @@ struct InfoRow: View {
         HStack(alignment: .top, spacing: 15) {
             Text(number)
                 .font(.system(size: 12, weight: .regular, design: .monospaced))
-                .foregroundColor(.primary.opacity(0.4))
+                .foregroundColor(.black.opacity(0.4))
                 .frame(width: 16, alignment: .center)
             
             Text(text)
                 .font(.system(size: 16, weight: .regular, design: .serif))
-                .foregroundColor(.primary)
+                .foregroundColor(.black)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
