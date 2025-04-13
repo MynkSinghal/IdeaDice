@@ -581,10 +581,16 @@ struct ContentView: View {
                         }
                         
                         // Word count
-                        Text("\(wordCount) words")
-                            .font(.system(size: 12, weight: .regular, design: .monospaced))
-                            .foregroundColor(.secondary)
-                            .opacity(0.5)
+                        HStack(spacing: 2) {
+                            Image(systemName: "text.word.count")
+                                .font(.system(size: 10))
+                                .foregroundColor(.secondary)
+                                .opacity(0.6)
+                            Text("\(wordCount) words")
+                                .font(.system(size: 12, weight: .regular, design: .monospaced))
+                                .foregroundColor(.secondary)
+                                .opacity(0.5)
+                        }
                     }
                     
                     Spacer()
@@ -761,41 +767,58 @@ struct ContentView: View {
                                 showSidebar = false
                             }
                         } label: {
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text(entry.title)
-                                    .font(.system(size: 16, weight: .medium, design: .serif))
-                                    .foregroundColor(.black)
-                                    .lineLimit(1)
-                                
-                                HStack {
-                                    Text(formatDate(entry.date))
-                                        .font(.system(size: 12, design: .serif))
-                                        .foregroundColor(.black.opacity(0.6))
+                            ZStack(alignment: .topTrailing) {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text(entry.title)
+                                        .font(.system(size: 16, weight: .medium, design: .serif))
+                                        .foregroundColor(.black)
+                                        .lineLimit(1)
                                     
-                                    Spacer()
-                                    
-                                    HStack(spacing: 6) {
-                                        if entry.isLocked {
-                                            Image(systemName: "lock.fill")
-                                                .font(.system(size: 10))
-                                                .foregroundColor(.black.opacity(0.5))
-                                        }
-                                        
-                                        Text("\(entry.wordCount) words")
+                                    HStack {
+                                        Text(formatDate(entry.date))
                                             .font(.system(size: 12, design: .serif))
                                             .foregroundColor(.black.opacity(0.6))
+                                        
+                                        Spacer()
+                                        
+                                        HStack(spacing: 6) {
+                                            if entry.isLocked {
+                                                Image(systemName: "lock.fill")
+                                                    .font(.system(size: 10))
+                                                    .foregroundColor(.black.opacity(0.5))
+                                            }
+                                            
+                                            Text("\(entry.wordCount) words")
+                                                .font(.system(size: 12, design: .serif))
+                                                .foregroundColor(.black.opacity(0.6))
+                                        }
                                     }
                                 }
+                                .padding(12)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(Color.white)
+                                .cornerRadius(8)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(Color.black.opacity(0.08), lineWidth: 1)
+                                )
+                                .shadow(color: Color.black.opacity(0.04), radius: 3, x: 0, y: 1)
+                                
+                                // Delete button in top right
+                                Button {
+                                    if let index = historyManager.entries.firstIndex(where: { $0.id == entry.id }) {
+                                        historyManager.deleteEntry(at: IndexSet(integer: index))
+                                    }
+                                } label: {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 9, weight: .bold))
+                                        .foregroundColor(.black.opacity(0.5))
+                                        .padding(4)
+                                        .background(Circle().fill(Color.gray.opacity(0.15)))
+                                }
+                                .buttonStyle(.plain)
+                                .padding(4)
                             }
-                            .padding(12)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.white)
-                            .cornerRadius(8)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.black.opacity(0.08), lineWidth: 1)
-                            )
-                            .shadow(color: Color.black.opacity(0.04), radius: 3, x: 0, y: 1)
                         }
                         .buttonStyle(.plain)
                         .contextMenu {
