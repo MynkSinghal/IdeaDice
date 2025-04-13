@@ -1,20 +1,22 @@
 import SwiftUI
+import AppKit
 
 struct WelcomeView: View {
     @Binding var isShowingWelcome: Bool
+    @ObservedObject private var settings = AppSettings.shared
     
     var body: some View {
         VStack(spacing: 40) {
             Spacer()
             
             Text("Flow Writing")
-                .font(.system(size: 28, weight: .light, design: .serif))
+                .font(Font(settings.selectedFont.uiFont(size: 28)))
                 .foregroundColor(.black)
                 .kerning(2)
             
             VStack(spacing: 30) {
                 Text("A simple exercise to develop your creative thinking and writing skills.")
-                    .font(.system(size: 16, weight: .regular, design: .serif))
+                    .font(Font(settings.selectedFont.uiFont(size: 16)))
                     .foregroundColor(.black)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 450)
@@ -52,7 +54,7 @@ struct WelcomeView: View {
                 }
             } label: {
                 Text("Begin")
-                    .font(.system(size: 16, weight: .regular, design: .serif))
+                    .font(Font(settings.selectedFont.uiFont(size: 16)))
                     .foregroundColor(.black)
                     .kerning(1)
                     .frame(width: 140, height: 40)
@@ -75,6 +77,7 @@ struct WelcomeView: View {
 struct InfoRow: View {
     let number: String
     let text: String
+    @ObservedObject private var settings = AppSettings.shared
     
     var body: some View {
         HStack(alignment: .top, spacing: 15) {
@@ -84,7 +87,7 @@ struct InfoRow: View {
                 .frame(width: 16, alignment: .center)
             
             Text(text)
-                .font(.system(size: 16, weight: .regular, design: .serif))
+                .font(Font(settings.selectedFont.uiFont(size: 16)))
                 .foregroundColor(.black)
                 .fixedSize(horizontal: false, vertical: true)
         }

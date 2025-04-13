@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct SettingsView: View {
     @ObservedObject private var settings = AppSettings.shared
@@ -7,17 +8,27 @@ struct SettingsView: View {
     var body: some View {
         VStack(spacing: 40) {
             Text("Settings")
-                .font(.system(size: 20, weight: .light, design: .serif))
+                .font(Font(settings.selectedFont.uiFont(size: 20)))
                 .foregroundColor(.black)
                 .kerning(1)
             
             VStack(alignment: .leading, spacing: 20) {
-                Toggle(isOn: $settings.soundEnabled) {
-                    Text("Sound Effects")
-                        .font(.system(size: 16, weight: .regular, design: .serif))
-                        .foregroundColor(.black)
+                Button {
+                    settings.cycleToNextFont()
+                } label: {
+                    HStack {
+                        Text("Font")
+                            .font(Font(settings.selectedFont.uiFont(size: 16)))
+                            .foregroundColor(.black)
+                        
+                        Spacer()
+                        
+                        Text(settings.selectedFont.rawValue)
+                            .font(.system(size: 14, weight: .regular, design: .monospaced))
+                            .foregroundColor(.gray)
+                    }
                 }
-                .toggleStyle(.switch)
+                .buttonStyle(.plain)
                 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("About")
@@ -25,7 +36,7 @@ struct SettingsView: View {
                         .foregroundColor(.gray.opacity(0.8))
                     
                     Text("A minimalist writing tool designed to spark creativity through random word prompts. Write freely without distraction to develop creative thinking skills.")
-                        .font(.system(size: 14, weight: .regular, design: .serif))
+                        .font(Font(settings.selectedFont.uiFont(size: 14)))
                         .foregroundColor(.black.opacity(0.8))
                         .lineSpacing(4)
                         .fixedSize(horizontal: false, vertical: true)
@@ -41,7 +52,7 @@ struct SettingsView: View {
                 dismiss()
             } label: {
                 Text("Close")
-                    .font(.system(size: 14, weight: .regular, design: .serif))
+                    .font(Font(settings.selectedFont.uiFont(size: 14)))
                     .foregroundColor(.black.opacity(0.7))
                     .frame(width: 120, height: 34)
                     .overlay(
