@@ -12,6 +12,12 @@ struct WritingEditor: View {
     @Binding var isEditorFocused: Bool
     @FocusState private var isTextFieldFocused: Bool
     
+    // State to track if this is the first edit
+    @State private var isFirstEdit: Bool = true
+    
+    // Default placeholder text
+    private let placeholderText = "Start writing based on the inspiration words above...\n\nLet your thoughts flow freely without overthinking."
+    
     // Callbacks
     var onFormatBold: () -> Void
     var onFormatItalic: () -> Void
@@ -25,7 +31,14 @@ struct WritingEditor: View {
                 set: { newValue in
                     // Only update the text if not locked
                     if !isLocked {
-                        noteText = newValue
+                        // Check if this is the first edit and we still have the placeholder
+                        if isFirstEdit && noteText == placeholderText {
+                            // Clear the placeholder when user starts typing
+                            noteText = newValue.replacingOccurrences(of: placeholderText, with: "")
+                            isFirstEdit = false
+                        } else {
+                            noteText = newValue
+                        }
                     }
                 }
             ))
@@ -34,13 +47,19 @@ struct WritingEditor: View {
                 .focused($isTextFieldFocused)
                 .scrollContentBackground(.hidden)
                 .background(Color.white)
-                .foregroundColor(.black)
+                .foregroundColor(isFirstEdit && noteText == placeholderText ? .gray.opacity(0.7) : .black)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(30)
                 .scrollIndicators(.hidden)
                 .disabled(isLocked)
                 .onTapGesture {
                     if !isLocked {
+                        // Clear placeholder on tap if it's the first edit
+                        if isFirstEdit && noteText == placeholderText {
+                            noteText = ""
+                            isFirstEdit = false
+                        }
+                        
                         withAnimation(.easeInOut(duration: 0.4)) {
                             opacity = opacity == 1.0 ? 0.0 : 1.0
                         }
@@ -48,13 +67,16 @@ struct WritingEditor: View {
                 }
                 .onChange(of: noteText) { _, newValue in
                     if !isLocked {
-                        historyManager.autoSave(newValue)
-                        
-                        // Use dispatchQueue to avoid modifying state during view update
-                        DispatchQueue.main.async {
-                            // Start the writing timer if it's not already running
-                            if !newValue.isEmpty {
-                                onTimerStart()
+                        // Don't save placeholder text to history
+                        if !(isFirstEdit && newValue == placeholderText) {
+                            historyManager.autoSave(newValue)
+                            
+                            // Use dispatchQueue to avoid modifying state during view update
+                            DispatchQueue.main.async {
+                                // Start the writing timer if it's not already running
+                                if !newValue.isEmpty {
+                                    onTimerStart()
+                                }
                             }
                         }
                     } else {
@@ -74,7 +96,8 @@ struct WritingEditor: View {
                 }
                 .overlay(
                     Group {
-                        if noteText.isEmpty && !isTextFieldFocused {
+                        // Only show empty state placeholder when there's no text and placeholder has been cleared
+                        if noteText.isEmpty && !isTextFieldFocused && !isFirstEdit {
                             Text("Begin typing based on the words above...")
                                 .font(Font(settings.selectedFont.uiFont(size: 18)))
                                 .foregroundColor(.gray.opacity(0.6))
@@ -123,6 +146,14 @@ struct WritingEditor: View {
             }
         }
         .onAppear {
+            // Initialize with placeholder text if empty
+            if noteText.isEmpty && historyManager.currentlyEditingEntry == nil {
+                noteText = placeholderText
+                isFirstEdit = true
+            } else {
+                isFirstEdit = false
+            }
+            
             // Focus the text editor when the view appears
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 isTextFieldFocused = true

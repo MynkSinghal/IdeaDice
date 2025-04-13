@@ -57,38 +57,6 @@ struct WelcomeView: View {
                         }
                     }
                 
-                // Recent writings section
-                if hasRecentWritings {
-                    VStack(spacing: 15) {
-                        Text("Recent Writings")
-                            .font(Font(settings.selectedFont.uiFont(size: 16)))
-                            .fontWeight(.medium)
-                            .foregroundColor(.black.opacity(0.7))
-                            .padding(.bottom, 5)
-                        
-                        HStack(spacing: 15) {
-                            ForEach(recentEntries) { entry in
-                                RecentWritingCard(entry: entry) {
-                                    // Load the selected entry and close welcome screen
-                                    historyManager.setCurrentEntry(entry)
-                                    withAnimation {
-                                        isShowingWelcome = false
-                                    }
-                                }
-                                .frame(height: 130)
-                            }
-                        }
-                        .frame(height: 130)
-                    }
-                    .padding(.horizontal, 40)
-                    .opacity(recentWritingsOpacity)
-                    .onAppear {
-                        withAnimation(.easeOut(duration: 0.8).delay(0.4)) {
-                            recentWritingsOpacity = 1
-                        }
-                    }
-                }
-                
                 VStack(spacing: 30) {
                     Text("A simple exercise to develop your creative thinking and writing skills.")
                         .font(Font(settings.selectedFont.uiFont(size: 16)))
@@ -290,8 +258,8 @@ struct TutorialOverlay: View {
                         if index == currentPage {
                             TutorialPageView(page: tutorials[index])
                                 .transition(.asymmetric(
-                                    insertion: .move(edge: index > currentPage ? .trailing : .leading),
-                                    removal: .move(edge: index > currentPage ? .leading : .trailing)
+                                    insertion: .move(edge: .trailing),
+                                    removal: .move(edge: .leading)
                                 ))
                                 .id(index) // Ensures view is refreshed when index changes
                         }
@@ -299,6 +267,7 @@ struct TutorialOverlay: View {
                 }
                 .frame(height: 300)
                 .animation(.easeInOut, value: currentPage)
+                .clipped() // Ensure content stays within bounds
                 
                 // Page indicator dots
                 HStack(spacing: 10) {
@@ -373,6 +342,7 @@ struct TutorialOverlay: View {
                     .shadow(color: Color.black.opacity(0.2), radius: 20, x: 0, y: 10)
             )
             .frame(width: 500, height: 500)
+            .clipShape(RoundedRectangle(cornerRadius: 16)) // Clip the entire card to prevent content overflow
         }
     }
 }
