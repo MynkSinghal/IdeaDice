@@ -1,44 +1,78 @@
-# 🎲 Idea Dice - Creativity Spark Generator
+# 🎲 IdeaDice - Creative Writing Tool
 
-A minimalist macOS app built in SwiftUI that helps overcome creative blocks by generating three random words:
-- A noun
-- A verb 
-- An emotion
+A beautiful, minimalist macOS app designed to spark creativity and overcome writer's block by combining randomly generated words with a distraction-free writing environment.
 
-## Features
+![IdeaDice App](https://your-screenshot-link-here.png)
 
-- 🎲 Random prompt generator with smooth animations
-- 🎨 Clean, minimalist UI with beautiful typography
-- 📝 Quick thoughts section to jot down immediate ideas
-- 🎧 Optional sound effects
-- 🌙 Supports dark mode
+## ✨ Features
 
-## Getting Started
+- **Word Prompts Generator**: Roll for random noun, verb, and emotion combinations to inspire your writing
+- **Distraction-Free Editor**: Clean writing interface with customizable fonts
+- **Focus Mode**: Integrated ambient sounds to enhance concentration
+- **Flow Writing Options**: "No Backspace" mode to encourage continuous writing flow
+- **Writing History**: Automatically saves your work with a convenient history sidebar
+- **Format Tools**: Basic text formatting including bold, italic, and underline
 
-### Prerequisites
-- macOS 11.0+
-- Xcode 13.0+
+
+## 🎵 Ambient Sounds
+
+The app includes several ambient sound options to enhance focus:
+- Rain
+- Coffee Shop
+- Nature
+- Fireplace
+- Flute Melody
+
+Sounds loop continuously for uninterrupted writing sessions.
+
+## 🚀 Getting Started
+
+
 
 ### Installation
-1. Clone this repository
-2. Open `IdeaDice.xcodeproj` in Xcode
-3. Build and run the app
 
-## How to Use
-1. Launch the app
-2. Click the "Roll the Dice" button to generate a new set of words
-3. Use the text area to quickly note down any ideas inspired by the words
-4. Click the settings gear to configure sound preferences
+1. Download the [IdeaDice.dmg](https://github.com/MynkSinghal/IdeaDice/releases/download/v1.0.0/IdeaDice.app.zip) file
+2. Open the DMG file
+3. Drag IdeaDice to your Applications folder
+4. Launch from your Applications folder or Launchpad
 
-## Project Structure
-- **Models**: Data structures and word banks
-- **Views**: SwiftUI interface components
-- **Utils**: Helper utilities like sound management
-- **Resources**: Assets and sounds
+## 💡 How to Use
 
-## License
+1. **Roll the Dice**: Click the refresh icon to generate new word prompts
+2. **Start Writing**: Begin typing in the main editor - your work is automatically saved
+3. **Toggle Focus Mode**: Select ambient sounds from the bottom toolbar
+4. **Flow Options**: Enable "No Backspace" for distraction-free writing flow
+5. **View History**: Toggle the sidebar to access previous writing sessions
+
+## 🧠 Philosophy
+
+IdeaDice combines two powerful creative techniques:
+1. **Random Word Association**: Prompts unexpected connections and new ideas
+2. **Flow State Writing**: Minimizes editing and encourages continuous writing
+
+The app is designed to be both beautiful and functional, offering just enough features to support creative writing without overwhelming users with options.
+
+## 🔧 Technical Details
+
+Built with:
+- SwiftUI for the interface
+- AppKit integration for advanced macOS features
+- Core Audio for sound management
+
+
+## 🤝 Contributing
+
+This project is open to contributions. If you'd like to help improve IdeaDice:
+
+1. Fork the repository
+2. Create a feature branch
+3. Submit a pull request
+
+## 📄 License
+
 This project is open source and available under the MIT License.
 
-## Acknowledgments
-- Inspired by creative writing exercises and ideation techniques
-- Built as a practical tool for designers, writers, and other creative professionals 
+## 👏 Acknowledgments
+
+- Inspired by creative writing exercises and flow state techniques
+- Created for writers, poets, journalers, and anyone who enjoys capturing thoughts in words 
