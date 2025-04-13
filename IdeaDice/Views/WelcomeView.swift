@@ -12,11 +12,13 @@ struct WelcomeView: View {
             
             Text("Flow Writing")
                 .font(.system(size: 28, weight: .light, design: .serif))
+                .foregroundColor(.primary)
                 .kerning(2)
             
             VStack(spacing: 30) {
                 Text("A simple exercise to develop your creative thinking and writing skills.")
                     .font(.system(size: 16, weight: .regular, design: .serif))
+                    .foregroundColor(.primary)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 450)
                 
@@ -47,14 +49,15 @@ struct WelcomeView: View {
             Spacer()
             
             Button {
+                print("Begin button pressed, closing welcome screen")
                 withAnimation(.easeOut(duration: 0.3)) {
                     isShowingWelcome = false
                 }
             } label: {
                 Text("Begin")
                     .font(.system(size: 16, weight: .regular, design: .serif))
+                    .foregroundColor(.primary)
                     .kerning(1)
-                    .foregroundStyle(.primary)
                     .frame(width: 140, height: 40)
                     .overlay(
                         RoundedRectangle(cornerRadius: 4)
@@ -67,7 +70,6 @@ struct WelcomeView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(backgroundColor)
         .onAppear {
-            // Ensure visibility by explicitly logging
             print("WelcomeView appeared")
         }
     }
@@ -81,12 +83,12 @@ struct InfoRow: View {
         HStack(alignment: .top, spacing: 15) {
             Text(number)
                 .font(.system(size: 12, weight: .regular, design: .monospaced))
-                .foregroundStyle(.primary.opacity(0.4))
+                .foregroundColor(.primary.opacity(0.4))
                 .frame(width: 16, alignment: .center)
             
             Text(text)
                 .font(.system(size: 16, weight: .regular, design: .serif))
-                .foregroundStyle(.primary)
+                .foregroundColor(.primary)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }

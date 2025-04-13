@@ -13,16 +13,11 @@ struct IdeaDiceApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     init() {
-        // Safely initialize Metal - properly handle errors
-        if let device = MTLCreateSystemDefaultDevice() {
-            do {
-                // Try to create the Metal library
-                let _ = try device.makeDefaultLibrary(bundle: Bundle.main)
-            } catch {
-                print("Metal initialization error: \(error)")
-            }
+        // Basic Metal initialization without complexities
+        if let _ = MTLCreateSystemDefaultDevice() {
+            print("Metal device available")
         } else {
-            print("Metal device not available on this system")
+            print("Metal device not available")
         }
     }
     
@@ -31,6 +26,9 @@ struct IdeaDiceApp: App {
             ContentView()
                 .toolbar(.hidden, for: .windowToolbar)
                 .frame(minWidth: 800, minHeight: 600)
+                .onAppear {
+                    print("App main view appeared")
+                }
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 900, height: 700)
@@ -38,10 +36,12 @@ struct IdeaDiceApp: App {
     }
 }
 
-// Refined AppDelegate to handle window configuration more robustly
+// AppDelegate to handle window configuration
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Add a slight delay to ensure window is ready
+        print("App launched - configuring window")
+        
+        // Configure main window after a brief delay
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             self.configureMainWindow()
         }
@@ -49,16 +49,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     private func configureMainWindow() {
         if let window = NSApplication.shared.windows.first {
-            // Ensure window is properly sized and visible
+            // Basic window setup
             window.makeKeyAndOrderFront(nil)
             
-            // Enter fullscreen mode
+            // Enter fullscreen mode if needed
             if !window.styleMask.contains(.fullScreen) {
                 window.toggleFullScreen(nil)
             }
             
-            // Make sure window is displayed at the front
+            // Ensure window is visible
             window.orderFrontRegardless()
+            print("Window configured")
+        } else {
+            print("No window found to configure")
         }
     }
 }

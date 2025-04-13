@@ -7,8 +7,8 @@ struct ContentView: View {
     @State private var noteText = ""
     @State private var isRolling = false
     @State private var showSettings = false
-    @State private var isShowingWelcome = true  // Keep this true for initial launch
-    @State private var isInitialized = false    // Add initialization tracking
+    @State private var isShowingWelcome = true
+    @State private var isInitialized = false
     @ObservedObject private var settings = AppSettings.shared
     @FocusState private var isTextFieldFocused: Bool
     @State private var opacity: Double = 1.0
@@ -22,24 +22,26 @@ struct ContentView: View {
     private let backgroundColor = Color(red: 255/255, green: 255/255, blue: 240/255)
     
     var body: some View {
-        NavigationView {
+        ZStack {
+            // Background
+            backgroundColor.edgesIgnoringSafeArea(.all)
+            
+            // Main content
             if isShowingWelcome {
                 WelcomeView(isShowingWelcome: $isShowingWelcome)
-                    .background(backgroundColor)
-                    .navigationTitle("")
-                    .navigationBarHidden(true)
+                    .transition(.opacity)
             } else {
-                mainView
-                    .navigationTitle("")
-                    .navigationBarHidden(true)
-                    .sheet(isPresented: $showSettings) {
-                        SettingsView()
-                            .background(backgroundColor)
-                    }
+                mainContent
+                    .transition(.opacity)
             }
         }
-        .navigationViewStyle(StackNavigationViewStyle())
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
+                .background(backgroundColor)
+        }
         .onAppear {
+            print("ContentView appeared with isShowingWelcome: \(isShowingWelcome)")
+            
             // Force new word generation on launch
             if !isInitialized {
                 let newWords = WordData.rollDice()
@@ -48,13 +50,12 @@ struct ContentView: View {
                 self.emotion = newWords.emotion
                 isInitialized = true
                 
-                // Print app state for debugging
-                print("ContentView appeared: words initialized")
+                print("Words initialized: \(noun), \(verb), \(emotion)")
             }
         }
     }
     
-    var mainView: some View {
+    var mainContent: some View {
         VStack(spacing: 0) {
             // Word Cards in a discreet horizontal row
             HStack(spacing: 16) {
@@ -138,7 +139,9 @@ struct ContentView: View {
                     }
                 )
                 .onTapGesture {
-                    opacity = opacity == 1.0 ? 0.0 : 1.0
+                    withAnimation(.easeInOut(duration: 0.4)) {
+                        opacity = opacity == 1.0 ? 0.0 : 1.0
+                    }
                 }
             
             // Word count in footer
@@ -179,11 +182,11 @@ struct ContentView: View {
             .animation(.easeInOut(duration: 0.4), value: opacity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(backgroundColor)
         .onAppear {
             // Focus the text editor when the main view appears
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 isTextFieldFocused = true
+                print("Main content appeared, focusing text field")
             }
         }
     }
