@@ -7,7 +7,8 @@ struct ContentView: View {
     @State private var noteText = ""
     @State private var isRolling = false
     @State private var showSettings = false
-    @State private var isShowingWelcome = true
+    @State private var isShowingWelcome = true  // Keep this true for initial launch
+    @State private var isInitialized = false    // Add initialization tracking
     @ObservedObject private var settings = AppSettings.shared
     @FocusState private var isTextFieldFocused: Bool
     @State private var opacity: Double = 1.0
@@ -21,15 +22,35 @@ struct ContentView: View {
     private let backgroundColor = Color(red: 255/255, green: 255/255, blue: 240/255)
     
     var body: some View {
-        if isShowingWelcome {
-            WelcomeView(isShowingWelcome: $isShowingWelcome)
-                .background(backgroundColor)
-        } else {
-            mainView
-                .sheet(isPresented: $showSettings) {
-                    SettingsView()
-                        .background(backgroundColor)
-                }
+        NavigationView {
+            if isShowingWelcome {
+                WelcomeView(isShowingWelcome: $isShowingWelcome)
+                    .background(backgroundColor)
+                    .navigationTitle("")
+                    .navigationBarHidden(true)
+            } else {
+                mainView
+                    .navigationTitle("")
+                    .navigationBarHidden(true)
+                    .sheet(isPresented: $showSettings) {
+                        SettingsView()
+                            .background(backgroundColor)
+                    }
+            }
+        }
+        .navigationViewStyle(StackNavigationViewStyle())
+        .onAppear {
+            // Force new word generation on launch
+            if !isInitialized {
+                let newWords = WordData.rollDice()
+                self.noun = newWords.noun
+                self.verb = newWords.verb
+                self.emotion = newWords.emotion
+                isInitialized = true
+                
+                // Print app state for debugging
+                print("ContentView appeared: words initialized")
+            }
         }
     }
     
@@ -100,9 +121,9 @@ struct ContentView: View {
                 .lineSpacing(6)
                 .focused($isTextFieldFocused)
                 .scrollContentBackground(.hidden)
+                .background(backgroundColor)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(30)
-                .background(backgroundColor)
                 .overlay(
                     Group {
                         if noteText.isEmpty && !isTextFieldFocused {
@@ -160,6 +181,7 @@ struct ContentView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(backgroundColor)
         .onAppear {
+            // Focus the text editor when the main view appears
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 isTextFieldFocused = true
             }

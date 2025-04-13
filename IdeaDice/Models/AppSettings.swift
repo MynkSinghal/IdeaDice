@@ -9,9 +9,22 @@ class AppSettings: ObservableObject {
         }
     }
     
+    // Add a flag to track first launch
+    @Published var isFirstLaunch: Bool {
+        didSet {
+            UserDefaults.standard.set(!isFirstLaunch, forKey: "hasLaunchedBefore")
+        }
+    }
+    
     private init() {
-        // Use a safer approach to get default value - if there's an error, default to false to avoid sound issues
-        let defaultValue = UserDefaults.standard.object(forKey: "soundEnabled") as? Bool
-        self.soundEnabled = defaultValue ?? false
+        // Set sound option with safer initialization
+        let soundSetting = UserDefaults.standard.object(forKey: "soundEnabled") as? Bool
+        self.soundEnabled = soundSetting ?? false
+        
+        // Check if this is first launch
+        self.isFirstLaunch = !(UserDefaults.standard.bool(forKey: "hasLaunchedBefore"))
+        
+        // Log initialization for debugging
+        print("AppSettings initialized: sound=\(soundEnabled), firstLaunch=\(isFirstLaunch)")
     }
 } 

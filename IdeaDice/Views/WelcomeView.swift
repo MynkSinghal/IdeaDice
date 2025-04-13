@@ -66,6 +66,10 @@ struct WelcomeView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(backgroundColor)
+        .onAppear {
+            // Ensure visibility by explicitly logging
+            print("WelcomeView appeared")
+        }
     }
 }
 
